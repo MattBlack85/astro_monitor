@@ -5,7 +5,7 @@ A small monitoring process that checks if kstars is active, if not it sends a re
 Find the latest release [here](https://github.com/MattBlack85/astro_monitor/releases), grab the zip archive and unzip it on your filesystem.
 At this point you should have already an api token, if not see [here](#obtain-an-api-token)
 
-Run `./astromonitor FOO` where FOO is your API token
+Run `./astromonitor XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX` where XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX is your API token
 
 
 For a more user friendly list of commands try the following
@@ -14,7 +14,7 @@ mkdir astro_monitor
 cd astro_monitor
 wget https://github.com/MattBlack85/astro_monitor/releases/download/v0.1.0/astromonitor.zip
 unzip astromonitor.zip
-./astromonitor FOO
+./astromonitor XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
 ```
 
 # Obtain an API token
