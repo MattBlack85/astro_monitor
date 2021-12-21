@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 // use std::process::Command;
 // use std::process::Stdio;
 // use std::io::Write;
@@ -30,16 +31,13 @@
 
 use std::io::prelude::*;
 use std::process::{Command, Stdio};
+=======
+use std::{thread, time};
+use sysinfo::{System, SystemExt};
+>>>>>>> Stashed changes
 
-fn main() {
-    // List all running processes via ps aux
-    let ps_proc = match Command::new("ps")
- 	.arg("aux")
- 	.output() {
-	    Ok(process) => process,
-	    Err(reason) => panic!("ps aux failed because: {}", reason),
-	};
 
+<<<<<<< Updated upstream
     // Spawn the `grep` command
     let process = match Command::new("grep")
 	                         .arg("kstars")
@@ -55,18 +53,29 @@ fn main() {
         Err(reason) => panic!("could not write to grep stdin: {}", reason),
         Ok(_) => (),
     }
+=======
+static INTERVAL: time::Duration = time::Duration::from_secs(15);
+>>>>>>> Stashed changes
 
-    // Because `stdin` does not live after the above calls, it is `drop`ed,
-    // and the pipe is closed.
-    //
-    // This is very important, otherwise `wc` wouldn't start processing the
-    // input we just sent.
+fn notify_via_telegram() {
+    println!("notifying");
+}
 
+<<<<<<< Updated upstream
     // The `stdout` field also has type `Option<ChildStdout>` so must be unwrapped.
     let mut s = String::new();
     match process.stdout.unwrap().read_to_string(&mut s) {
         Err(why) => panic!("couldn't read wc stdout: {}", why),
         Ok(_) => print!("wc responded with:\n{}", s),
+=======
+fn main() {
+    loop {
+	let all_procs = System::new_all();
+	match all_procs.process_by_name("kstars")[..] {
+	    [] => notify_via_telegram(),
+	    [..] => (),
+	};
+	thread::sleep(INTERVAL);
+>>>>>>> Stashed changes
     }
-    println!("{}", s);
 }
