@@ -27,7 +27,7 @@ jobs:
 
     runs-on: ${{ matrix.OS }}
     env:
-      NAME: rust-cross-compile-example
+      NAME: astromonitor
       TARGET: ${{ matrix.TARGET }}
       OS: ${{ matrix.OS }}
     steps:
