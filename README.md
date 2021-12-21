@@ -2,7 +2,7 @@
 A small monitoring process that checks if kstars is active, if not it sends a request to notify a user via telegram that it crashed
 
 # How to use this
-Find the latest release [here](https://github.com/MattBlack85/astro_monitor/releases), grab the zip archive and unzip it on your filesystem.
+Find the latest release [here](https://github.com/MattBlack85/astro_monitor/releases), grab the gzipped tarball (tar.gz) archive and unpack it on your filesystem.
 At this point you should have already an api token, if not see [here](#obtain-an-api-token)
 
 Run `./astromonitor XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX` where XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX is your API token
