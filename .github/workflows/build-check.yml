@@ -34,6 +34,7 @@ jobs:
       NAME: astromonitor
       TARGET: ${{ matrix.TARGET }}
       OS: ${{ matrix.OS }}
+      SHORT_NAME: ${{ matrix.SHORT_NAME }}
     steps:
       - uses: actions/checkout@v2
       - name: Cargo cache
