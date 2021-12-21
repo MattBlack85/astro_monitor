@@ -12,8 +12,8 @@ For a more user friendly list of commands try the following
 ```
 mkdir astro_monitor
 cd astro_monitor
-wget https://github.com/MattBlack85/astro_monitor/releases/download/v0.1.0/astromonitor.zip
-unzip astromonitor.zip
+wget https://github.com/MattBlack85/astro_monitor/releases/download/v0.2.0/astromonitor-XXX-XXX.tar.gz
+tar –xvzf astromonitor-XXX-XXX.tar.gz
 ./astromonitor XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
 ```
 
