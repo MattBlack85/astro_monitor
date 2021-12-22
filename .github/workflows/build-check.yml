@@ -2,9 +2,15 @@ name: Astro monitor build
 
 on:
   push:
+    branches: [ main ]
+    tags: v*
+    path-ignore:
+      - README.md
 
   pull_request:
     branches: [ main ]
+    path-ignore:
+      - README.md
 
 env:
   CARGO_TERM_COLOR: always
