@@ -4,7 +4,7 @@ use structopt::StructOpt;
 use minreq::{post, Error};
 
 static INTERVAL: time::Duration = time::Duration::from_secs(15);
-static HOST: &'static str = "http://astromatto.com:8000/hook";
+static HOST: &'static str = "http://astromatto.com:11111/hook";
 
 #[derive(StructOpt)]
 struct CliArgs {
