@@ -8,13 +8,13 @@ case $OS in
     Linux)
 	case $MACHINE in
 	    x86_64)
-		ARCH=amd64
+		ARCH=linux-amd64
 		;;
-	    armv7)
-		ARCH=$OS;
+	    armv7l)
+		ARCH=armv7
 		;;
-	    armv6)
-		ARCH=$OS
+	    aarch64)
+		ARCH=arm64
 	esac
 	;;
     Darwin)
@@ -29,4 +29,4 @@ esac
 wget https://github.com/MattBlack85/astro_monitor/releases/download/$VERSION/$PACKAGE_NAME-$ARCH-$VERSION.$EXTENSION
 tar -xvzf astromonitor*.tar.gz
 rm astromonitor*tar.gz
-sudo mv astromonitor /usr/bin/
+sudo mv astromonitor /usr/local/bin/
