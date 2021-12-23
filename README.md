@@ -9,7 +9,7 @@ you trust me? run the following command
 wget -O - https://raw.githubusercontent.com/MattBlack85/astro_monitor/main/install.sh | sh
 ```
 
-sudo will be needed as last step to move `astromonitor` to `/usr/bin`
+sudo will be needed as last step to move `astromonitor` to `/usr/local/bin`
 
 
 # How to use astromonitor
