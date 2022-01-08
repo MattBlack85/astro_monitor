@@ -60,6 +60,7 @@ fn main() -> Result<(), Error> {
 
     println!("Looking for Kstars!");
     
+    // Find a way to run lsof / | awk '{print $1}' | sort | uniq -c | sort -r -n | head -n 20 periodically
     loop {
         let all_procs = System::new_all();
         let kstars_proc = all_procs.process_by_name("kstars");
