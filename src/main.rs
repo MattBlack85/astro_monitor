@@ -31,19 +31,24 @@ fn notify_via_telegram(token: &String) -> Result<(), Error> {
     });
 }
 
-fn check_lsof_on_system() -> u8 {
+fn check_lsof_on_system() -> bool {
     let result = Command::new("which").arg("lsof").output().expect("error");
     let output = String::from_utf8(result.stdout)
         .expect("fail to parse output")
         .to_string();
     match output.as_ref() {
-        "" => return 0,
-        _ => return 1,
+        "" => return false,
+        _ => return true,
     };
 }
 
-fn fd_report() -> String {
+fn fd_report() {
+    /// Runs lsof on the whole filesystem, sorting results, dropping duplicates and returns
+    /// the top 20 offenders.
+    ///
+    /// This is equal to run `lsof -w / | awk '{print $1}' | sort | uniq -c | sort -r -n | head -n 20
     let lsof = Command::new("lsof")
+        .arg("-w")
         .arg("/")
         .stdout(Stdio::piped())
         .spawn()
@@ -84,7 +89,7 @@ fn fd_report() -> String {
 
     let report = String::from_utf8_lossy(&head.stdout);
 
-    return report.to_string();
+    println!("{}", report);
 }
 
 fn main() -> Result<(), Error> {
@@ -94,11 +99,13 @@ fn main() -> Result<(), Error> {
     let mut found: bool = false;
 
     if fd_monitor {
-        let res = check_lsof_on_system();
-        if res == 0 {
-            println!("`--fd-monitor` flag passed but `lsof` command not found or not available in PATH, aborting!");
-            process::exit(0);
-        }
+        match check_lsof_on_system() {
+            false => {
+                println!("`--fd-monitor` flag passed but `lsof` command not found or not available in PATH, aborting!");
+                process::exit(0)
+            }
+            true => (),
+        };
     }
 
     println!("Looking for Kstars!");
@@ -115,12 +122,10 @@ fn main() -> Result<(), Error> {
         };
         found = true;
 
-        let fd_result = match fd_monitor {
+        match fd_monitor {
             true => fd_report(),
-            false => "".to_string(),
+            false => (),
         };
-
-        println!("{}", fd_result);
 
         thread::sleep(INTERVAL);
     }
