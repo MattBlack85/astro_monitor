@@ -1,8 +1,14 @@
+#![crate_name = "astromonitor"]
+extern crate minreq;
+extern crate structopt;
+extern crate sysinfo;
+
 use minreq::{post, Error};
 use std::process::{Command, Stdio};
 use std::{process, thread, time};
 use structopt::StructOpt;
 use sysinfo::{System, SystemExt};
+mod checks;
 
 static INTERVAL: time::Duration = time::Duration::from_secs(15);
 static HOST: &'static str = "http://astromatto.com:11111/hook";
@@ -31,22 +37,11 @@ fn notify_via_telegram(token: &String) -> Result<(), Error> {
     });
 }
 
-fn check_lsof_on_system() -> bool {
-    let result = Command::new("which").arg("lsof").output().expect("error");
-    let output = String::from_utf8(result.stdout)
-        .expect("fail to parse output")
-        .to_string();
-    match output.as_ref() {
-        "" => return false,
-        _ => return true,
-    };
-}
-
+/// Runs lsof on the whole filesystem, sorting results, dropping duplicates and returns
+/// the top 20 offenders.
+///
+/// This is equal to run `lsof -w / | awk '{print $1}' | sort | uniq -c | sort -r -n | head -n 20
 fn fd_report() {
-    /// Runs lsof on the whole filesystem, sorting results, dropping duplicates and returns
-    /// the top 20 offenders.
-    ///
-    /// This is equal to run `lsof -w / | awk '{print $1}' | sort | uniq -c | sort -r -n | head -n 20
     let lsof = Command::new("lsof")
         .arg("-w")
         .arg("/")
@@ -99,7 +94,7 @@ fn main() -> Result<(), Error> {
     let mut found: bool = false;
 
     if fd_monitor {
-        match check_lsof_on_system() {
+        match checks::system::lsof_on_system() {
             false => {
                 println!("`--fd-monitor` flag passed but `lsof` command not found or not available in PATH, aborting!");
                 process::exit(0)
@@ -110,9 +105,11 @@ fn main() -> Result<(), Error> {
 
     println!("Looking for Kstars!");
 
+    let mut system = System::new_all();
+
     loop {
-        let all_procs = System::new_all();
-        let kstars_proc = all_procs.process_by_name("kstars");
+        system.refresh_all();
+        let kstars_proc = system.process_by_name("kstars");
         if kstars_proc.is_empty() {
             let _resp = notify_via_telegram(&api_token)?;
         };
