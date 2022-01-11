@@ -8,7 +8,7 @@ use sysinfo::{ProcessorExt, System, SystemExt};
 pub fn cpu_and_memory(file_name: &String, log_path: &String) {
     let mut system = System::new();
     let mut options = OpenOptions::new();
-    let log_file = format!("{}/{}.log", log_path, file_name);
+    let log_file = format!("{}/system-{}.log", log_path, file_name);
 
     // Load CPU and memory usage
     system.refresh_system();
