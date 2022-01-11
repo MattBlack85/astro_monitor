@@ -81,7 +81,7 @@ fn fd_report() {
         .expect("failed echo command");
 
     let awk = Command::new("awk")
-        .arg("{print $1}")
+        .arg("{print $1 \" \" $2}")
         .stdin(lsof.stdout.unwrap())
         .stdout(Stdio::piped())
         .spawn()
@@ -103,17 +103,10 @@ fn fd_report() {
     let sort_again = Command::new("sort")
         .args(["-r", "-n"])
         .stdin(uniq.stdout.unwrap())
-        .stdout(Stdio::piped())
-        .spawn()
+        .output()
         .expect("Fail sort again");
 
-    let head = Command::new("head")
-        .args(["-n", "20"])
-        .stdin(sort_again.stdout.unwrap())
-        .output()
-        .expect("Head failed");
-
-    let report = String::from_utf8_lossy(&head.stdout);
+    let report = String::from_utf8_lossy(&sort_again.stdout);
 
     println!("{}", report);
 }
