@@ -13,8 +13,15 @@ sudo will be needed as last step to move `astromonitor` to `/usr/local/bin`
 
 
 # How to use astromonitor
-Simply open a terminal and run `astromonitor XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX` where XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX is your API token
+Given that your token is (just a random value here to give an example) `SecReTtOkEn`
 
+Simply open a terminal and run `astromonitor SecReTtOkEn`
+
+## Additional functionalities:
+- monitoring file descriptors used (to monitor file descriptors pass the flag `--fd-monitor`)
+- monitoring system resources (CPU and RAM) usage (to monitor file descriptors pass the flag `--system-monitor`)
+
+The main folder where you'll find the logs is `~/.local/share/astromonitor/logs`
 
 # Obtain an API token
 On telegram, look for @AstroMonitorBot and issue a `/register` command, store the token in a safe place
