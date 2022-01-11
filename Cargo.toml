@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 minreq = { version = "2.4.2", features = ["https"] }
-sysinfo = "0.22.3"
+sysinfo = "0.22.5"
 structopt = { version = "0.3", default-features = false }
 dirs = "4.0"
 chrono = "0.4.19"
