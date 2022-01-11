@@ -1,14 +1,17 @@
 #![crate_name = "astromonitor"]
+extern crate chrono;
 extern crate minreq;
 extern crate structopt;
 extern crate sysinfo;
 
+use chrono::SecondsFormat;
 use minreq::{post, Error};
 use std::process::{Command, Stdio};
 use std::{process, thread, time};
 use structopt::StructOpt;
 use sysinfo::{System, SystemExt};
 mod checks;
+mod monitoring;
 
 static INTERVAL: time::Duration = time::Duration::from_secs(15);
 static HOST: &'static str = "http://astromatto.com:11111/hook";
@@ -18,6 +21,34 @@ struct CliArgs {
     api_token: String,
     #[structopt(long)]
     fd_monitor: bool,
+    #[structopt(long)]
+    system_monitor: bool,
+}
+
+struct Paths {
+    folder_path: String,
+    logs_path: String,
+    home_path: String,
+}
+
+impl Paths {
+    fn logs_full_path(&self) -> String {
+        let logs_full_path = format!("{}/{}", self.root_path(), self.logs_path);
+        return logs_full_path;
+    }
+
+    fn root_path(&self) -> String {
+        let root_path = format!("{}/{}", self.home_path, self.folder_path);
+        return root_path;
+    }
+
+    fn init() -> Self {
+        Self {
+            folder_path: String::from(".local/share/astromonitor"),
+            logs_path: String::from("logs"),
+            home_path: dirs::home_dir().unwrap().as_path().display().to_string(),
+        }
+    }
 }
 
 fn notify_via_telegram(token: &String) -> Result<(), Error> {
@@ -92,6 +123,7 @@ fn main() -> Result<(), Error> {
     let api_token = args.api_token;
     let fd_monitor = args.fd_monitor;
     let mut found: bool = false;
+    let paths = Paths::init();
 
     // Boostrap the main folder where logs and our things will be stored
     match checks::vault::build_astromonitor_folder_tree() {
@@ -115,6 +147,7 @@ fn main() -> Result<(), Error> {
     println!("Looking for Kstars!");
 
     let mut system = System::new_all();
+    let start_time: String = chrono::Local::now().to_rfc3339_opts(SecondsFormat::Secs, false);
 
     loop {
         system.refresh_all();
@@ -132,6 +165,11 @@ fn main() -> Result<(), Error> {
             true => fd_report(),
             false => (),
         };
+
+        match args.system_monitor {
+            true => monitoring::resources::cpu_and_memory(&start_time, &paths.logs_full_path()),
+            false => (),
+        }
 
         thread::sleep(INTERVAL);
     }
