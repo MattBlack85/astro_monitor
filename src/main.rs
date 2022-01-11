@@ -139,7 +139,6 @@ fn main() -> Result<(), Error> {
 
     println!("Looking for Kstars!");
 
-    let mut system = System::new_all();
     let start_time: String = chrono::Local::now().to_rfc3339_opts(SecondsFormat::Secs, false);
 
     loop {
