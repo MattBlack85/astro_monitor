@@ -93,6 +93,15 @@ fn main() -> Result<(), Error> {
     let fd_monitor = args.fd_monitor;
     let mut found: bool = false;
 
+    // Boostrap the main folder where logs and our things will be stored
+    match checks::vault::build_astromonitor_folder_tree() {
+        Ok(()) => (),
+        Err(e) => panic!(
+            "The folder to store logs cannot be created, reason => {}",
+            e
+        ),
+    };
+
     if fd_monitor {
         match checks::system::lsof_on_system() {
             false => {
