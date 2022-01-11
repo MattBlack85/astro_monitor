@@ -143,8 +143,8 @@ fn main() -> Result<(), Error> {
     let start_time: String = chrono::Local::now().to_rfc3339_opts(SecondsFormat::Secs, false);
 
     loop {
-        system.refresh_all();
-        let kstars_proc = system.process_by_name("kstars");
+        system.refresh_processes();
+        let kstars_proc = system.process_by_exact_name("kstars");
         if kstars_proc.is_empty() {
             let _resp = notify_via_telegram(&api_token)?;
         };
