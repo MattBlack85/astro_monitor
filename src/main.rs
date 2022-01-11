@@ -9,7 +9,7 @@ use minreq::{post, Error};
 use std::process::{Command, Stdio};
 use std::{process, thread, time};
 use structopt::StructOpt;
-use sysinfo::{System, SystemExt};
+use sysinfo::{ProcessExt, System, SystemExt};
 mod checks;
 mod monitoring;
 
@@ -115,7 +115,6 @@ fn main() -> Result<(), Error> {
     let args = CliArgs::from_args();
     let api_token = args.api_token;
     let fd_monitor = args.fd_monitor;
-    let mut found: bool = false;
     let paths = Paths::init();
 
     // Boostrap the main folder where logs and our things will be stored
@@ -139,7 +138,20 @@ fn main() -> Result<(), Error> {
 
     println!("Looking for Kstars!");
 
+    let mut system = System::new();
     let start_time: String = chrono::Local::now().to_rfc3339_opts(SecondsFormat::Secs, false);
+
+    // Check if Kstars is already running when astromonitor starts and store the pid
+    // if that's the case, otherwise exit gracefully.
+    system.refresh_processes();
+    system.process_by_exact_name("kstars");
+    let kstars = system.process_by_exact_name("kstars");
+    if kstars.is_empty() {
+        println!("It seems you haven't started Kstars yet, please do it first.");
+        process::exit(0);
+    } else {
+        let _pid: i32 = kstars[0].pid();
+    };
 
     loop {
         system.refresh_processes();
@@ -147,11 +159,6 @@ fn main() -> Result<(), Error> {
         if kstars_proc.is_empty() {
             let _resp = notify_via_telegram(&api_token)?;
         };
-        match found {
-            true => (),
-            false => println!("Kstars found! Started monitoring"),
-        };
-        found = true;
 
         match fd_monitor {
             true => fd_report(),
