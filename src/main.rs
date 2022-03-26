@@ -10,6 +10,7 @@ use std::process::{Command, Stdio};
 use std::{process, thread, time};
 use structopt::StructOpt;
 use sysinfo::{ProcessExt, System, SystemExt};
+mod backup;
 mod checks;
 mod monitoring;
 
@@ -23,12 +24,15 @@ struct CliArgs {
     fd_monitor: bool,
     #[structopt(long)]
     system_monitor: bool,
+    #[structopt(long)]
+    do_backup: bool,
 }
 
 struct Paths {
     folder_path: String,
     logs_path: String,
     home_path: String,
+    db_path: String,
 }
 
 impl Paths {
@@ -42,11 +46,17 @@ impl Paths {
         return root_path;
     }
 
+    fn db_full_path(&self) -> String {
+        let db_path = format!("{}/{}", self.home_path, self.db_path);
+        return db_path;
+    }
+
     fn init() -> Self {
         Self {
             folder_path: String::from(".local/share/astromonitor"),
             logs_path: String::from("logs"),
             home_path: dirs::home_dir().unwrap().as_path().display().to_string(),
+            db_path: String::from(".local/share/kstars/userdb.sqlite"),
         }
     }
 }
@@ -115,6 +125,7 @@ fn main() -> Result<(), Error> {
     let args = CliArgs::from_args();
     let api_token = args.api_token;
     let fd_monitor = args.fd_monitor;
+    let do_backup = args.do_backup;
     let paths = Paths::init();
 
     // Boostrap the main folder where logs and our things will be stored
@@ -125,6 +136,10 @@ fn main() -> Result<(), Error> {
             e
         ),
     };
+
+    if do_backup {
+        backup::database::send_db(paths.db_full_path());
+    }
 
     if fd_monitor {
         match checks::system::lsof_on_system() {
