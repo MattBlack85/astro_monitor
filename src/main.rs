@@ -6,10 +6,12 @@ extern crate sysinfo;
 
 use astromonitor::{CliArgs, Paths, HOST, INTERVAL};
 use chrono::SecondsFormat;
+use env_logger::Env;
+use log::{error, info, warn};
 use std::process::{Command, Stdio};
 use std::{process, thread};
 use structopt::StructOpt;
-use sysinfo::{ProcessExt, System, SystemExt};
+use sysinfo::{System, SystemExt};
 
 mod backup;
 mod checks;
@@ -20,17 +22,17 @@ fn notify_via_telegram(token: &String) {
         Ok(r) => {
             process::exit(match r.status_code {
                 200 => {
-                    println!("Notification sent! Bye!");
+                    info!("Notification sent! Bye!");
                     0
                 }
                 _ => {
-                    println!("Notification failed with status: {}", r.status_code);
+                    warn!("Notification failed with status: {}", r.status_code);
                     1
                 }
             });
         }
         Err(e) => {
-            println!("The request couldn't be sent to the bot: {}", e);
+            error!("The request couldn't be sent to the bot: {}", e);
         }
     };
 }
@@ -79,6 +81,9 @@ fn fd_report() {
 }
 
 fn main() {
+    let env = Env::default().filter_or("ASTROMONITOR_LOG_LEVEL", "info");
+    env_logger::init_from_env(env);
+
     let args = CliArgs::from_args();
     let api_token = args.api_token;
     let fd_monitor = args.fd_monitor;
@@ -89,23 +94,26 @@ fn main() {
     // Boostrap the main folder where logs and our things will be stored
     match checks::vault::build_astromonitor_folder_tree() {
         Ok(()) => (),
-        Err(e) => println!(
-            "The folder to store logs cannot be created, reason => {}",
-            e
-        ),
+        Err(e) => {
+            error!(
+                "The folder to store logs cannot be created, reason => {}",
+                e
+            );
+            panic!("Folder to store logs cannot be created, check the error and retry, bye!");
+        }
     };
 
     if do_backup {
         match backup::database::send_db(&paths, &api_token) {
             Ok(_) => (),
-            Err(s) => println!("{}", format!("Error while trying to make a backup: {}", s)),
+            Err(s) => warn!("Error while trying to make a backup: {}", s),
         }
     }
 
     if fd_monitor {
         match checks::system::lsof_on_system() {
             false => {
-                println!("`--fd-monitor` flag passed but `lsof` command not found or not available in PATH, aborting!");
+                error!("`--fd-monitor` flag passed but `lsof` command not found or not available in PATH, aborting!");
                 process::exit(0)
             }
             true => (),
@@ -113,30 +121,40 @@ fn main() {
     }
 
     if kstars {
-        println!("Looking for Kstars!");
+        info!("Looking for Kstars!");
 
         let mut system = System::new();
         let start_time: String = chrono::Local::now().to_rfc3339_opts(SecondsFormat::Secs, false);
 
         // Check if Kstars is already running when astromonitor starts and store the pid
         // if that's the case, otherwise exit gracefully.
-        system.refresh_processes();
-        system.process_by_exact_name("kstars");
-        let kstars = system.process_by_exact_name("kstars");
-        if kstars.is_empty() {
-            println!("It seems you haven't started Kstars yet, please do it first.");
-            process::exit(0);
-        } else {
-            let _pid: i32 = kstars[0].pid();
-        };
+        let mut start_system = System::new();
+        start_system.refresh_all();
+        let mut start_procs = start_system.processes_by_exact_name("kstars");
+        let check = start_procs.next();
+
+        match check {
+            Some(_) => {
+                info!("Kstars found -- I am starting monitoring");
+            }
+            None => {
+                warn!("It seems you haven't started Kstars yet, please do it first.");
+                process::exit(0);
+            }
+        }
 
         loop {
             system.refresh_processes();
-            let kstars_proc = system.process_by_exact_name("kstars");
-            if kstars_proc.is_empty() {
-                println!("Kstars stopped running, sending a notification");
-                notify_via_telegram(&api_token);
-            };
+            let mut procs = system.processes_by_exact_name("kstars");
+            let kstars = procs.next();
+
+            match kstars {
+                Some(_) => (),
+                None => {
+                    warn!("Kstars stopped running, sending a notification");
+                    notify_via_telegram(&api_token);
+                }
+            }
 
             match fd_monitor {
                 true => fd_report(),
