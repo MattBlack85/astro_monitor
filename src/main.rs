@@ -47,25 +47,24 @@ impl Paths {
             folder_path: String::from(".local/share/astromonitor"),
             logs_path: String::from("logs"),
             home_path: dirs::home_dir().unwrap().as_path().display().to_string(),
+fn notify_via_telegram(token: &String) {
+    match minreq::post(format!("/hook/{}/{}", &HOST, &token)).send() {
+        Ok(r) => {
+            process::exit(match r.status_code {
+                200 => {
+                    println!("Notification sent! Bye!");
+                    0
+                }
+                _ => {
+                    println!("Notification failed with status: {}", r.status_code);
+                    1
+                }
+            });
         }
-    }
-}
-
-fn notify_via_telegram(token: &String) -> Result<(), Error> {
-    let response = post(format!("{}/{}", &HOST, &token)).send()?;
-
-    println!("Kstars stopped running, sending a notification");
-
-    process::exit(match response.status_code {
-        200 => {
-            println!("Notification sent! Bye!");
-            0
+        Err(e) => {
+            println!("The request couldn't be sent to the bot: {}", e);
         }
-        _ => {
-            println!("Notification failed with status: {}", response.status_code);
-            1
-        }
-    });
+    };
 }
 
 /// Runs lsof on the whole filesystem, sorting results, dropping duplicates and returns
