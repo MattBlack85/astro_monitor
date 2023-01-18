@@ -115,6 +115,7 @@ fn main() -> Result<(), Error> {
     let args = CliArgs::from_args();
     let api_token = args.api_token;
     let fd_monitor = args.fd_monitor;
+    let kstars = args.kstars;
     let paths = Paths::init();
 
     // Boostrap the main folder where logs and our things will be stored
@@ -136,40 +137,43 @@ fn main() -> Result<(), Error> {
         };
     }
 
-    println!("Looking for Kstars!");
+    if kstars {
+        println!("Looking for Kstars!");
 
-    let mut system = System::new();
-    let start_time: String = chrono::Local::now().to_rfc3339_opts(SecondsFormat::Secs, false);
+        let mut system = System::new();
+        let start_time: String = chrono::Local::now().to_rfc3339_opts(SecondsFormat::Secs, false);
 
-    // Check if Kstars is already running when astromonitor starts and store the pid
-    // if that's the case, otherwise exit gracefully.
-    system.refresh_processes();
-    system.process_by_exact_name("kstars");
-    let kstars = system.process_by_exact_name("kstars");
-    if kstars.is_empty() {
-        println!("It seems you haven't started Kstars yet, please do it first.");
-        process::exit(0);
-    } else {
-        let _pid: i32 = kstars[0].pid();
-    };
-
-    loop {
+        // Check if Kstars is already running when astromonitor starts and store the pid
+        // if that's the case, otherwise exit gracefully.
         system.refresh_processes();
-        let kstars_proc = system.process_by_exact_name("kstars");
-        if kstars_proc.is_empty() {
-            let _resp = notify_via_telegram(&api_token)?;
+        system.process_by_exact_name("kstars");
+        let kstars = system.process_by_exact_name("kstars");
+        if kstars.is_empty() {
+            println!("It seems you haven't started Kstars yet, please do it first.");
+            process::exit(0);
+        } else {
+            let _pid: i32 = kstars[0].pid();
         };
 
-        match fd_monitor {
-            true => fd_report(),
-            false => (),
-        };
+        loop {
+            system.refresh_processes();
+            let kstars_proc = system.process_by_exact_name("kstars");
+            if kstars_proc.is_empty() {
+                println!("Kstars stopped running, sending a notification");
+                notify_via_telegram(&api_token);
+            };
 
-        match args.system_monitor {
-            true => monitoring::resources::cpu_and_memory(&start_time, &paths.logs_full_path()),
-            false => (),
+            match fd_monitor {
+                true => fd_report(),
+                false => (),
+            };
+
+            match args.system_monitor {
+                true => monitoring::resources::cpu_and_memory(&start_time, &paths.logs_full_path()),
+                false => (),
+            }
+
+            thread::sleep(INTERVAL);
         }
-
-        thread::sleep(INTERVAL);
-    }
+    };
 }
