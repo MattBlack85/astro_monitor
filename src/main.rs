@@ -10,6 +10,8 @@ use std::process::{Command, Stdio};
 use std::{process, thread};
 use structopt::StructOpt;
 use sysinfo::{ProcessExt, System, SystemExt};
+
+mod backup;
 mod checks;
 mod monitoring;
 
@@ -76,21 +78,29 @@ fn fd_report() {
     println!("{}", report);
 }
 
-fn main() -> Result<(), Error> {
+fn main() {
     let args = CliArgs::from_args();
     let api_token = args.api_token;
     let fd_monitor = args.fd_monitor;
+    let do_backup = args.do_backup;
     let kstars = args.kstars;
     let paths = Paths::init();
 
     // Boostrap the main folder where logs and our things will be stored
     match checks::vault::build_astromonitor_folder_tree() {
         Ok(()) => (),
-        Err(e) => panic!(
+        Err(e) => println!(
             "The folder to store logs cannot be created, reason => {}",
             e
         ),
     };
+
+    if do_backup {
+        match backup::database::send_db(&paths, &api_token) {
+            Ok(_) => (),
+            Err(s) => println!("{}", format!("Error while trying to make a backup: {}", s)),
+        }
+    }
 
     if fd_monitor {
         match checks::system::lsof_on_system() {
