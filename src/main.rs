@@ -4,49 +4,15 @@ extern crate minreq;
 extern crate structopt;
 extern crate sysinfo;
 
+use astromonitor::{CliArgs, Paths, HOST, INTERVAL};
 use chrono::SecondsFormat;
-use minreq::{post, Error};
 use std::process::{Command, Stdio};
-use std::{process, thread, time};
+use std::{process, thread};
 use structopt::StructOpt;
 use sysinfo::{ProcessExt, System, SystemExt};
 mod checks;
 mod monitoring;
 
-static INTERVAL: time::Duration = time::Duration::from_secs(15);
-static HOST: &'static str = "http://astromatto.com:11111/hook";
-
-#[derive(StructOpt)]
-struct CliArgs {
-    api_token: String,
-    #[structopt(long)]
-    fd_monitor: bool,
-    #[structopt(long)]
-    system_monitor: bool,
-}
-
-struct Paths {
-    folder_path: String,
-    logs_path: String,
-    home_path: String,
-}
-
-impl Paths {
-    fn logs_full_path(&self) -> String {
-        let logs_full_path = format!("{}/{}", self.root_path(), self.logs_path);
-        return logs_full_path;
-    }
-
-    fn root_path(&self) -> String {
-        let root_path = format!("{}/{}", self.home_path, self.folder_path);
-        return root_path;
-    }
-
-    fn init() -> Self {
-        Self {
-            folder_path: String::from(".local/share/astromonitor"),
-            logs_path: String::from("logs"),
-            home_path: dirs::home_dir().unwrap().as_path().display().to_string(),
 fn notify_via_telegram(token: &String) {
     match minreq::post(format!("/hook/{}/{}", &HOST, &token)).send() {
         Ok(r) => {
