@@ -13,7 +13,7 @@ sudo will be needed as last step to move `astromonitor` to `/usr/local/bin`
 
 
 # How to use astromonitor
-Given that your token is (just a random value here to give an example) `SecReTtOkEn`
+Given that your token is (just a random value here to give an example) `SecReTtOkEn` you should pass it to astromonitor this way `astromonitor SecReTtOkEn [COMMAND (like --kstars)]`
 
 Open a terminal and run `astromonitor --help` to list the available commands
 
