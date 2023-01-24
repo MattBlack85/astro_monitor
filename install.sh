@@ -1,6 +1,6 @@
 OS=$(uname -s)
 MACHINE=$(uname -m)
-VERSION=$(curl -s https://api.github.com/repos/mattblack85/astro_monitor/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
+VERSION=$(curl -s https://api.github.com/repos/mattblack85/astro_monitor/releases/latest | grep  '"tag_name":' | grep -Eo 'v.*[0-9]')
 PACKAGE_NAME=astromonitor
 EXTENSION=tar.gz
 
