@@ -88,6 +88,7 @@ fn main() {
     let api_token = args.api_token;
     let fd_monitor = args.fd_monitor;
     let do_backup = args.do_backup;
+    let retrieve_backup = args.retrieve_backup;
     let kstars = args.kstars;
     let paths = Paths::init();
 
@@ -105,6 +106,13 @@ fn main() {
 
     if do_backup {
         match backup::database::send_db(&paths, &api_token) {
+            Ok(_) => (),
+            Err(s) => warn!("Error while trying to make a backup: {}", s),
+        }
+    }
+
+    if retrieve_backup {
+        match backup::database::retrieve_db(&paths, &api_token) {
             Ok(_) => (),
             Err(s) => warn!("Error while trying to make a backup: {}", s),
         }

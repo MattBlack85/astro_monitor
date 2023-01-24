@@ -1,8 +1,9 @@
 use astromonitor::Paths;
+use log::info;
 use minreq;
 use std::fs::File;
-use std::io::Read;
-use tar::Builder;
+use std::io::{Read, Write};
+use tar::{Archive, Builder};
 
 pub fn send_db(paths: &Paths, token: &String) -> Result<(), String> {
     // Init the zip archive
@@ -16,7 +17,7 @@ pub fn send_db(paths: &Paths, token: &String) -> Result<(), String> {
     // Add all indi devices xml configs to the archive
     match arch.append_dir_all("backup/indi", paths.indi_conf_full_path()) {
         Ok(_) => (),
-        Err(e) => println!("Couldn't append indi folder to the archive, reason: {}", e),
+        Err(e) => panic!("Couldn't append indi folder to the archive, reason: {}", e),
     }
 
     // Add kstars database to the archive
@@ -27,12 +28,12 @@ pub fn send_db(paths: &Paths, token: &String) -> Result<(), String> {
 
     match arch.append_file("backup/kstars/userdb.sqlite", &mut db) {
         Ok(_) => (),
-        Err(e) => println!("Couldn't append the database to the archive, reason: {}", e),
+        Err(e) => panic!("Couldn't append the database to the archive, reason: {}", e),
     }
 
     match arch.finish() {
         Ok(_) => (),
-        Err(e) => println!("Couldn't create the archive, reason: {}", e),
+        Err(e) => panic!("Couldn't create the archive, reason: {}", e),
     }
 
     let mut content = Vec::new();
@@ -43,7 +44,7 @@ pub fn send_db(paths: &Paths, token: &String) -> Result<(), String> {
 
     match f.read_to_end(&mut content) {
         Ok(_) => (),
-        Err(_e) => println!("Error while reading backup"),
+        Err(_e) => panic!("Error while reading backup"),
     }
 
     match minreq::post(format!("http://astromatto.com:11111/backup/db/{token}"))
@@ -51,8 +52,50 @@ pub fn send_db(paths: &Paths, token: &String) -> Result<(), String> {
         .with_body(content)
         .send()
     {
+        Ok(_) => {
+            info!("Backup successful, you can have a peaceful sleep now!");
+            Ok(())
+        }
+        Err(e) => Err(format!("Request failed with reason {}", e)),
+    }
+}
+
+pub fn retrieve_db(paths: &Paths, token: &String) -> Result<(), String> {
+    match minreq::get(format!("http://astromatto.com:11111/backup/db/{token}"))
+        .with_header("content-type", "application/octet-stream")
+        .send()
+    {
         Ok(r) => {
-            println!("Request successful, response is {:?}", r);
+            let mut f = File::create("temp_backup.tar").unwrap();
+            f.write_all(r.as_bytes()).unwrap();
+            let mut arch = Archive::new(File::open("temp_backup.tar").unwrap());
+            for entry in arch.entries().unwrap() {
+                let mut tf = entry.unwrap();
+                let path = tf.path().unwrap();
+
+                if &path.file_name().unwrap().to_str().unwrap() == &"indi" {
+                    continue;
+                }
+
+                let mut s = Vec::new();
+                let full_path: String;
+
+                if path.to_str().unwrap().contains(&"indi") {
+                    full_path = format!(
+                        "{}{}",
+                        paths.indi_conf_full_path(),
+                        &path.file_name().unwrap().to_str().unwrap()
+                    );
+                } else {
+                    full_path = paths.db_full_path();
+                };
+
+                tf.read_to_end(&mut s).unwrap();
+                let mut f = File::create(full_path).unwrap();
+                f.write(&s).unwrap();
+            }
+            std::fs::remove_file("temp_backup.tar").unwrap();
+            info!("Backup restored with success");
             Ok(())
         }
         Err(e) => Err(format!("Request failed with reason {}", e)),

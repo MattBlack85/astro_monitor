@@ -14,6 +14,8 @@ pub struct CliArgs {
     #[structopt(long)]
     pub do_backup: bool,
     #[structopt(long)]
+    pub retrieve_backup: bool,
+    #[structopt(long)]
     pub kstars: bool,
 }
 
