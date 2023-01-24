@@ -53,7 +53,10 @@ impl Paths {
             folder_path: String::from(".local/share/astromonitor"),
             logs_path: String::from("logs"),
             home_path: dirs::home_dir().unwrap().as_path().display().to_string(),
+            #[cfg(target_os = "linux")]
             db_path: String::from(".local/share/kstars/userdb.sqlite"),
+            #[cfg(target_os = "macos")]
+            db_path: String::from("Library/Application Support/kstars/userdb.sqlite"),
             indi_conf_path: String::from(".indi/"),
         }
     }
