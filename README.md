@@ -15,11 +15,14 @@ sudo will be needed as last step to move `astromonitor` to `/usr/local/bin`
 # How to use astromonitor
 Given that your token is (just a random value here to give an example) `SecReTtOkEn`
 
-Simply open a terminal and run `astromonitor SecReTtOkEn`
+Open a terminal and run `astromonitor --help` to list the available commands
 
-## Additional functionalities:
-- monitoring file descriptors used (to monitor file descriptors pass the flag `--fd-monitor`)
-- monitoring system resources (CPU and RAM) usage (to monitor file descriptors pass the flag `--system-monitor`)
+## Functionalities:
+- `--kstars` monitor Kstars and send a telegram notification if it crashes during a session
+- `--do-backup` make a backup of the Kstars database and INDI devices configuration and store it remotely
+- `--retrieve-backup` restore the previously saved backup
+- `--fd-monitor` monitor file descriptors used to check if there is any leak
+- `--system-monitor` monitor system resources (CPU and RAM) usage and log it
 
 The main folder where you'll find the logs is `~/.local/share/astromonitor/logs`
 
