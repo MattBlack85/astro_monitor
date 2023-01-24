@@ -35,7 +35,10 @@ jobs:
             SHORT_NAME: arm64
           - TARGET: x86_64-apple-darwin # tested on a mac, is not properly signed so there are security warnings
             OS: macos-latest
-            SHORT_NAME: macos
+            SHORT_NAME: macos-x64
+          - TARGET: aarch64-apple-darwin
+            OS: macos-latest
+            SHORT_NAME: macos-arm64
 
     runs-on: ${{ matrix.OS }}
     env:

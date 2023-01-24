@@ -18,10 +18,17 @@ case $OS in
 	esac
 	;;
     Darwin)
-	ARCH=macos
+	case $MACHINE in
+	    x86_64)
+		ARCH=macos-x64
+		;;
+	    arm64)
+		ARCH=macos-arm64
+		;;
+	esac
 	;;
     *)
-	echo "OS not supported, please raise an issue at https://github.com/MattBlack85/astro_monitor/issues giving the result of `uname -s`"
+	echo "OS not supported, please raise an issue at https://github.com/MattBlack85/astro_monitor/issues giving the result of `uname -s` and `uname -m`"
 	;;
 esac
 
