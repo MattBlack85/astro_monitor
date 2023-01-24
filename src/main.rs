@@ -18,7 +18,7 @@ mod checks;
 mod monitoring;
 
 fn notify_via_telegram(token: &String) {
-    match minreq::post(format!("/hook/{}/{}", &HOST, &token)).send() {
+    match minreq::post(format!("{}/hook/{}", &HOST, &token)).send() {
         Ok(r) => {
             process::exit(match r.status_code {
                 200 => {
