@@ -27,7 +27,7 @@ jobs:
           - TARGET: x86_64-unknown-linux-gnu # tested in a debian container on a mac
             OS: ubuntu-latest
             SHORT_NAME: linux-amd64
-          - TARGET: armv7-unknown-linux-gnueabihf # raspberry 32bit
+          - TARGET: armv7-unknown-linux-musleabihf # raspberry 32bit, unfortunately astroberry is still on an old distro withva very old glibc and musle is needed
             OS: ubuntu-latest
             SHORT_NAME: armv7
           - TARGET: aarch64-unknown-linux-gnu # raspberry 64bit
@@ -73,11 +73,11 @@ jobs:
           [target.armv7-unknown-linux-gnueabihf]
           linker = "arm-linux-gnueabihf-gcc"
           [target.armv7-unknown-linux-musleabihf]
-          linker = "arm-linux-gnueabihf-gcc"
+          linker = "arm-linux-musleabihf-gcc"
           [target.arm-unknown-linux-gnueabihf]
           linker = "arm-linux-gnueabihf-gcc"
           [target.arm-unknown-linux-musleabihf]
-          linker = "arm-linux-gnueabihf-gcc"
+          linker = "arm-linux-musleabihf-gcc"
           EOF
       - name: Install rust target
         run: rustup target add $TARGET
