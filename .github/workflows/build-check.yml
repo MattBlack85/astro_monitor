@@ -27,9 +27,6 @@ jobs:
           - TARGET: x86_64-unknown-linux-gnu # tested in a debian container on a mac
             OS: ubuntu-latest
             SHORT_NAME: linux-amd64
-          - TARGET: armv7-unknown-linux-musleabihf # raspberry 32bit, unfortunately astroberry is still on an old distro withva very old glibc and musle is needed
-            OS: ubuntu-latest
-            SHORT_NAME: armv7
           - TARGET: aarch64-unknown-linux-gnu # raspberry 64bit
             OS: ubuntu-latest
             SHORT_NAME: arm64
@@ -55,8 +52,6 @@ jobs:
             ~/.cargo/registry
             ./target
           key: build-cargo-registry-${{matrix.TARGET}}
-      - name: install musl-gcc
-        run: sudo apt-get install musl-tools
       - name: Install and configure dependencies
         run: |
           # dependencies are only needed on ubuntu as that's the only place where
