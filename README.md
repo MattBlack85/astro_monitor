@@ -1,6 +1,6 @@
 # Astro monitor
 A small program that can help you with your astro session. 
-The main functional it is the watchdog; if astromonitor notices Kstars is dead il will send a request to notify a user via telegram. 
+The main functionality is the watchdog; if astromonitor notices Kstars is dead il will send a request to notify you via telegram. 
 The other cool feature is the backup, astromonitor can backup your INDI configuration for your devices and the equipment you use for your ekos profile; you can restore them on other PC or when installing the suite again. 
 
 
