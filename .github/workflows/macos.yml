@@ -1,4 +1,4 @@
-name: Astro monitor build
+name: Astro monitor build for MacOS
 
 on:
   push:
@@ -24,12 +24,12 @@ jobs:
       matrix:
         # a list of all the targets
         include:
-          - TARGET: x86_64-unknown-linux-gnu # tested in a debian container on a mac
-            OS: ubuntu-latest
-            SHORT_NAME: linux-amd64
-          - TARGET: x86_64-unknown-linux-musl # tested in a debian container on a mac
-            OS: ubuntu-latest
-            SHORT_NAME: linux-amd64-musl
+          - TARGET: x86_64-apple-darwin
+            OS: macos-latest
+            SHORT_NAME: macos-x64
+          - TARGET: aarch64-apple-darwin
+            OS: macos-latest
+            SHORT_NAME: macos-arm64
 
     runs-on: ${{ matrix.OS }}
     env:
@@ -46,22 +46,19 @@ jobs:
             ~/.cargo/registry
             ./target
           key: build-cargo-registry-${{matrix.TARGET}}
-
+      - name: Install and configure dependencies
         run: |
           # dependencies are only needed on ubuntu as that's the only place where
           # we make cross-compilation
           if [[ $OS =~ ^ubuntu.*$ ]]; then
-            sudo apt-get install -qq build-crossbuild-essential-arm64 crossbuild-essential-armhf musl-tools
+            sudo apt-get install -qq crossbuild-essential-arm64 crossbuild-essential-armhf
           fi
-          wget https://musl.cc/aarch64-linux-musl-cross.tgz
-          tar -xvzf aarch64-linux-musl-cross.tgz
-          mv aarch64-linux-musl-cross/bin/* /usr/local/bin
           # some additional configuration for cross-compilation on linux
           cat >>~/.cargo/config <<EOF
           [target.aarch64-unknown-linux-gnu]
           linker = "aarch64-linux-gnu-gcc"
           [target.aarch64-unknown-linux-musl]
-          linker = "aarch64-linux-musl-gcc"
+          linker = "aarch64-linux-gnu-gcc"
           [target.armv7-unknown-linux-gnueabihf]
           linker = "arm-linux-gnueabihf-gcc"
           [target.armv7-unknown-linux-musleabihf]
@@ -70,8 +67,6 @@ jobs:
           linker = "arm-linux-gnueabihf-gcc"
           [target.arm-unknown-linux-musleabihf]
           linker = "arm-linux-musleabihf-gcc"
-          [target.x86_64-unknown-linux-musl]
-          linker = "musl-gcc"
           EOF
       - name: Install rust target
         run: rustup target add $TARGET
@@ -82,7 +77,12 @@ jobs:
       - name: Compress
         run: |
           mkdir -p ./artifacts
-          EXEC=$NAME
+          # windows is the only OS using a different convention for executable file name
+          if [[ $OS =~ ^windows.*$ ]]; then
+              EXEC=$NAME.exe
+          else
+              EXEC=$NAME
+          fi
           if [[ $GITHUB_REF_TYPE =~ ^tag$ ]]; then
             TAG=$GITHUB_REF_NAME
           else
