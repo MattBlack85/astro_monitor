@@ -26,6 +26,7 @@ pub struct Paths {
     db_path: String,
     city_db_path: String,
     indi_conf_path: String,
+    fov_path: String,
 }
 
 impl Paths {
@@ -49,6 +50,11 @@ impl Paths {
         return db_path;
     }
 
+    pub fn fov_full_path(&self) -> String {
+        let path = format!("{}/{}", self.home_path, self.fov_path);
+        return path;
+    }
+
     pub fn indi_conf_full_path(&self) -> String {
         let indi_conf_path = format!("{}/{}", self.home_path, self.indi_conf_path);
         return indi_conf_path;
@@ -65,6 +71,7 @@ impl Paths {
             db_path: String::from("Library/Application Support/kstars/userdb.sqlite"),
             indi_conf_path: String::from(".indi/"),
             city_db_path: String::from(".local/share/kstars/mycitydb.sqlite"),
+            fov_path: String::from(".local/share/kstars/fov.dat"),
         }
     }
 }
