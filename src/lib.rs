@@ -70,8 +70,14 @@ impl Paths {
             #[cfg(target_os = "macos")]
             db_path: String::from("Library/Application Support/kstars/userdb.sqlite"),
             indi_conf_path: String::from(".indi/"),
+            #[cfg(target_os = "linux")]
             city_db_path: String::from(".local/share/kstars/mycitydb.sqlite"),
+            #[cfg(target_os = "macos")]
+            city_db_path: String::from("Library/Application Support/kstars/mycitydb.sqlite"),
+            #[cfg(target_os = "linux")]
             fov_path: String::from(".local/share/kstars/fov.dat"),
+            #[cfg(target_os = "macos")]
+            fov_path: String::from("Library/Application Support/kstars/fov.dat")
         }
     }
 }
