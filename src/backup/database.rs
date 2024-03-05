@@ -66,6 +66,13 @@ pub fn retrieve_db(paths: &Paths, token: &String) -> Result<(), String> {
         .send()
     {
         Ok(r) => {
+            // Just make sure ~/.indi exists
+            match std::fs::create_dir(format!("{}/{}", paths.home_path, ".indi")) {
+                Ok(_) => (),
+                Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => (),
+                Err(e) => panic!("IO error: {}", e),
+            };
+
             let mut f = File::create("temp_backup.tar").unwrap();
             f.write_all(r.as_bytes()).unwrap();
             let mut arch = Archive::new(File::open("temp_backup.tar").unwrap());

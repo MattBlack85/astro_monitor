@@ -22,7 +22,7 @@ pub struct CliArgs {
 pub struct Paths {
     folder_path: String,
     logs_path: String,
-    home_path: String,
+    pub home_path: String,
     db_path: String,
     indi_conf_path: String,
 }
