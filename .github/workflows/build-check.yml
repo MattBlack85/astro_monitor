@@ -52,6 +52,7 @@ jobs:
           # dependencies are only needed on ubuntu as that's the only place where
           # we make cross-compilation
           if [[ $OS =~ ^ubuntu.*$ ]]; then
+            sudo apt-get update && sudo apt-get upgrade
             sudo apt-get install -qq build-crossbuild-essential-arm64 crossbuild-essential-armhf musl-tools
           fi
           wget https://musl.cc/aarch64-linux-musl-cross.tgz
