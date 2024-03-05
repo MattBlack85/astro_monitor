@@ -53,7 +53,7 @@ jobs:
           # we make cross-compilation
           if [[ $OS =~ ^ubuntu.*$ ]]; then
             sudo apt-get update && sudo apt-get upgrade
-            sudo apt-get install -qq build-crossbuild-essential-arm64 crossbuild-essential-armhf musl-tools
+            sudo apt-get install -qq crossbuild-essential-arm64 crossbuild-essential-armhf musl-tools
           fi
           wget https://musl.cc/aarch64-linux-musl-cross.tgz
           tar -xvzf aarch64-linux-musl-cross.tgz
