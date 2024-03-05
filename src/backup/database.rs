@@ -31,6 +31,17 @@ pub fn send_db(paths: &Paths, token: &String) -> Result<(), String> {
         Err(e) => panic!("Couldn't append the database to the archive, reason: {}", e),
     }
 
+    // Add city database to the archive
+    let mut city_db = match File::open(paths.city_db_full_path()) {
+        Ok(f) => f,
+        Err(e) => panic!("Couldn't open the Kstars city database, reason: {}", e),
+    };
+
+    match arch.append_file("backup/kstars/mycitydb.sqlite", &mut city_db) {
+        Ok(_) => (),
+        Err(e) => panic!("Couldn't append the database to the archive, reason: {}", e),
+    }
+
     match arch.finish() {
         Ok(_) => (),
         Err(e) => panic!("Couldn't create the archive, reason: {}", e),
@@ -93,6 +104,8 @@ pub fn retrieve_db(paths: &Paths, token: &String) -> Result<(), String> {
                         paths.indi_conf_full_path(),
                         &path.file_name().unwrap().to_str().unwrap()
                     );
+                } else if path.to_str().unwrap().contains(&"mycity") {
+                    full_path = paths.city_db_full_path();
                 } else {
                     full_path = paths.db_full_path();
                 };

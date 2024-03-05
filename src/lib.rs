@@ -24,6 +24,7 @@ pub struct Paths {
     logs_path: String,
     pub home_path: String,
     db_path: String,
+    city_db_path: String,
     indi_conf_path: String,
 }
 
@@ -43,6 +44,11 @@ impl Paths {
         return db_path;
     }
 
+    pub fn city_db_full_path(&self) -> String {
+        let db_path = format!("{}/{}", self.home_path, self.city_db_path);
+        return db_path;
+    }
+
     pub fn indi_conf_full_path(&self) -> String {
         let indi_conf_path = format!("{}/{}", self.home_path, self.indi_conf_path);
         return indi_conf_path;
@@ -58,6 +64,7 @@ impl Paths {
             #[cfg(target_os = "macos")]
             db_path: String::from("Library/Application Support/kstars/userdb.sqlite"),
             indi_conf_path: String::from(".indi/"),
+            city_db_path: String::from(".local/share/kstars/mycitydb.sqlite"),
         }
     }
 }
