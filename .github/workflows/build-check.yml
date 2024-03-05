@@ -1,16 +1,17 @@
 name: Astro monitor build
 
 on:
+  workflow_dispatch:
   push:
     branches: [ main ]
     tags: v*
-    path-ignore:
+    paths-ignore:
       - README.md
       - install.sh
 
   pull_request:
     branches: [ main ]
-    path-ignore:
+    paths-ignore:
       - README.md
       - install.sh
 
@@ -46,7 +47,7 @@ jobs:
             ~/.cargo/registry
             ./target
           key: build-cargo-registry-${{matrix.TARGET}}
-
+      - name: Pull deps
         run: |
           # dependencies are only needed on ubuntu as that's the only place where
           # we make cross-compilation
