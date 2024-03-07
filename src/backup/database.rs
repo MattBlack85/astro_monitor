@@ -15,13 +15,13 @@ pub fn send_db(paths: &Paths, token: &String) -> Result<(), String> {
     let mut arch = Builder::new(file);
 
     // Add all indi devices xml configs to the archive
-    match arch.append_dir_all("backup/indi", paths.indi_conf_full_path()) {
+    match arch.append_dir_all("backup/indi", &paths.indi_conf_path) {
         Ok(_) => (),
         Err(e) => panic!("Couldn't append indi folder to the archive, reason: {}", e),
     }
 
     // Add kstars database to the archive
-    let mut db = match File::open(paths.db_full_path()) {
+    let mut db = match File::open(&paths.db_path) {
         Ok(f) => f,
         Err(e) => panic!("Couldn't open the Kstars database, reason: {}", e),
     };
@@ -32,7 +32,7 @@ pub fn send_db(paths: &Paths, token: &String) -> Result<(), String> {
     }
 
     // Add city database to the archive
-    let mut city_db = match File::open(paths.city_db_full_path()) {
+    let mut city_db = match File::open(&paths.city_db_path) {
         Ok(f) => f,
         Err(e) => panic!("Couldn't open the Kstars city database, reason: {}", e),
     };
@@ -43,7 +43,7 @@ pub fn send_db(paths: &Paths, token: &String) -> Result<(), String> {
     }
 
     // Add fov.dat to the archive
-    let mut fov_db = match File::open(paths.fov_full_path()) {
+    let mut fov_db = match File::open(&paths.fov_path) {
         Ok(f) => f,
         Err(e) => panic!("Couldn't open the FOV database, reason: {}", e),
     };
@@ -51,6 +51,20 @@ pub fn send_db(paths: &Paths, token: &String) -> Result<(), String> {
     match arch.append_file("backup/kstars/fov.dat", &mut fov_db) {
         Ok(_) => (),
         Err(e) => panic!("Couldn't append the database to the archive, reason: {}", e),
+    }
+
+    // Add kstarsrc to the archive
+    let mut kstarsrc = match File::open(&paths.kstars_rc_path) {
+        Ok(f) => f,
+        Err(e) => panic!("Couldn't open kstarsrc, reason: {}", e),
+    };
+
+    match arch.append_file("backup/kstars/kstarsrc", &mut kstarsrc) {
+        Ok(_) => (),
+        Err(e) => panic!(
+            "Couldn't append the kstarsrc file to the archive, reason: {}",
+            e
+        ),
     }
 
     match arch.finish() {
@@ -89,7 +103,7 @@ pub fn retrieve_db(paths: &Paths, token: &String) -> Result<(), String> {
     {
         Ok(r) => {
             // Just make sure ~/.indi exists
-            match std::fs::create_dir(format!("{}/{}", paths.home_path, ".indi")) {
+            match std::fs::create_dir(&paths.indi_conf_path) {
                 Ok(_) => (),
                 Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => (),
                 Err(e) => panic!("IO error: {}", e),
@@ -112,17 +126,18 @@ pub fn retrieve_db(paths: &Paths, token: &String) -> Result<(), String> {
                 if path.to_str().unwrap().contains(&"indi") {
                     full_path = format!(
                         "{}{}",
-                        paths.indi_conf_full_path(),
+                        &paths.indi_conf_path,
                         &path.file_name().unwrap().to_str().unwrap()
                     );
                 } else if path.to_str().unwrap().contains(&"mycity") {
-                    full_path = paths.city_db_full_path();
+                    full_path = paths.city_db_path.to_owned();
                 } else if path.to_str().unwrap().contains(&"fov") {
-                    full_path = paths.fov_full_path();
+                    full_path = paths.fov_path.to_owned();
+                } else if path.to_str().unwrap().contains(&"kstarsrc") {
+                    full_path = paths.kstars_rc_path.to_owned();
                 } else {
-                    full_path = paths.db_full_path();
+                    full_path = paths.db_path.to_owned();
                 };
-
                 tf.read_to_end(&mut s).unwrap();
                 let mut f = File::create(full_path).unwrap();
                 f.write(&s).unwrap();

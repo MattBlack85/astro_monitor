@@ -22,11 +22,12 @@ pub struct CliArgs {
 pub struct Paths {
     folder_path: String,
     logs_path: String,
-    pub home_path: String,
-    db_path: String,
-    city_db_path: String,
-    indi_conf_path: String,
-    fov_path: String,
+    home_path: String,
+    pub db_path: String,
+    pub city_db_path: String,
+    pub indi_conf_path: String,
+    pub fov_path: String,
+    pub kstars_rc_path: String,
 }
 
 impl Paths {
@@ -40,44 +41,25 @@ impl Paths {
         return root_path;
     }
 
-    pub fn db_full_path(&self) -> String {
-        let db_path = format!("{}/{}", self.home_path, self.db_path);
-        return db_path;
-    }
-
-    pub fn city_db_full_path(&self) -> String {
-        let db_path = format!("{}/{}", self.home_path, self.city_db_path);
-        return db_path;
-    }
-
-    pub fn fov_full_path(&self) -> String {
-        let path = format!("{}/{}", self.home_path, self.fov_path);
-        return path;
-    }
-
-    pub fn indi_conf_full_path(&self) -> String {
-        let indi_conf_path = format!("{}/{}", self.home_path, self.indi_conf_path);
-        return indi_conf_path;
-    }
-
     pub fn init() -> Self {
+        let home_path = dirs::home_dir().unwrap().as_path().display().to_string();
+        let config_path = dirs::preference_dir()
+            .unwrap()
+            .as_path()
+            .display()
+            .to_string();
+        let data_path = dirs::data_dir().unwrap().as_path().display().to_string();
+
         Self {
             folder_path: String::from(".local/share/astromonitor"),
             logs_path: String::from("logs"),
-            home_path: dirs::home_dir().unwrap().as_path().display().to_string(),
-            #[cfg(target_os = "linux")]
-            db_path: String::from(".local/share/kstars/userdb.sqlite"),
-            #[cfg(target_os = "macos")]
-            db_path: String::from("Library/Application Support/kstars/userdb.sqlite"),
-            indi_conf_path: String::from(".indi/"),
-            #[cfg(target_os = "linux")]
-            city_db_path: String::from(".local/share/kstars/mycitydb.sqlite"),
-            #[cfg(target_os = "macos")]
-            city_db_path: String::from("Library/Application Support/kstars/mycitydb.sqlite"),
-            #[cfg(target_os = "linux")]
-            fov_path: String::from(".local/share/kstars/fov.dat"),
-            #[cfg(target_os = "macos")]
-            fov_path: String::from("Library/Application Support/kstars/fov.dat")
+            home_path: home_path.clone(),
+
+            db_path: format!("{}/kstars/userdb.sqlite", &data_path),
+            city_db_path: format!("{}/kstars/mycitydb.sqlite", &data_path),
+            fov_path: format!("{}/kstars/fov.dat", &data_path),
+            indi_conf_path: format!("{}/.indi/", &home_path),
+            kstars_rc_path: format!("{}/kstarsrc", &config_path),
         }
     }
 }
