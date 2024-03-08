@@ -28,6 +28,8 @@ pub struct Paths {
     pub indi_conf_path: String,
     pub fov_path: String,
     pub kstars_rc_path: String,
+    pub phd2_profile_path: String,
+    pub phd2_filename: String,
 }
 
 impl Paths {
@@ -50,6 +52,12 @@ impl Paths {
             .to_string();
         let data_path = dirs::data_dir().unwrap().as_path().display().to_string();
 
+        #[cfg(target_os = "linux")]
+        let phd2_filename = String::from(".PHDGuidingV2");
+
+        #[cfg(target_os = "macos")]
+        let phd2_filename = String::from("PHDGuidingV2_Preferences");
+
         Self {
             folder_path: String::from(".local/share/astromonitor"),
             logs_path: String::from("logs"),
@@ -60,6 +68,11 @@ impl Paths {
             fov_path: format!("{}/kstars/fov.dat", &data_path),
             indi_conf_path: format!("{}/.indi/", &home_path),
             kstars_rc_path: format!("{}/kstarsrc", &config_path),
+            phd2_filename: phd2_filename.clone(),
+            #[cfg(target_os = "linux")]
+            phd2_profile_path: format!("{}/{}", &home_path, &phd2_filename),
+            #[cfg(target_os = "macos")]
+            phd2_profile_path: format!("{}/{}", &config_path, &phd2_filename),
         }
     }
 }

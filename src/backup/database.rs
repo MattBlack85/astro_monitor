@@ -10,6 +10,14 @@ fn check_city_db_exists(paths: &Paths) -> bool {
     Path::new(&paths.city_db_path).exists()
 }
 
+fn check_indi_folder_exists(paths: &Paths) -> bool {
+    Path::new(&paths.indi_conf_path).exists()
+}
+
+fn check_phd2_profile_exists(paths: &Paths) -> bool {
+    Path::new(&paths.phd2_profile_path).exists()
+}
+
 pub fn send_db(paths: &Paths, token: &String) -> Result<(), String> {
     // Init the zip archive
     let file = match File::create("/tmp/k_backup.tar") {
@@ -19,10 +27,12 @@ pub fn send_db(paths: &Paths, token: &String) -> Result<(), String> {
 
     let mut arch = Builder::new(file);
 
-    // Add all indi devices xml configs to the archive
-    match arch.append_dir_all("backup/indi", &paths.indi_conf_path) {
-        Ok(_) => (),
-        Err(e) => panic!("Couldn't append indi folder to the archive, reason: {}", e),
+    if check_indi_folder_exists(paths) {
+        // Add all indi devices xml configs to the archive
+        match arch.append_dir_all("backup/indi", &paths.indi_conf_path) {
+            Ok(_) => (),
+            Err(e) => panic!("Couldn't append indi folder to the archive, reason: {}", e),
+        }
     }
 
     // Add kstars database to the archive
@@ -46,6 +56,22 @@ pub fn send_db(paths: &Paths, token: &String) -> Result<(), String> {
         match arch.append_file("backup/kstars/mycitydb.sqlite", &mut city_db) {
             Ok(_) => (),
             Err(e) => panic!("Couldn't append the database to the archive, reason: {}", e),
+        }
+    }
+
+    if check_phd2_profile_exists(paths) {
+        // Add PHD2 profile to the archive
+        let mut phd2 = match File::open(&paths.phd2_profile_path) {
+            Ok(f) => f,
+            Err(e) => panic!("Couldn't open the PHD2 profile, reason: {}", e),
+        };
+
+        match arch.append_file(format!("backup/{}", paths.phd2_filename), &mut phd2) {
+            Ok(_) => (),
+            Err(e) => panic!(
+                "Couldn't append the PHD2 profile to the archive, reason: {}",
+                e
+            ),
         }
     }
 
@@ -142,6 +168,8 @@ pub fn retrieve_db(paths: &Paths, token: &String) -> Result<(), String> {
                     full_path = paths.fov_path.to_owned();
                 } else if path.to_str().unwrap().contains(&"kstarsrc") {
                     full_path = paths.kstars_rc_path.to_owned();
+                } else if path.to_str().unwrap().contains(&"PHD") {
+                    full_path = paths.phd2_profile_path.to_owned();
                 } else {
                     full_path = paths.db_path.to_owned();
                 };
