@@ -3,7 +3,12 @@ use log::info;
 use minreq;
 use std::fs::File;
 use std::io::{Read, Write};
+use std::path::Path;
 use tar::{Archive, Builder};
+
+fn check_city_db_exists(paths: &Paths) -> bool {
+    Path::new(&paths.city_db_path).exists()
+}
 
 pub fn send_db(paths: &Paths, token: &String) -> Result<(), String> {
     // Init the zip archive
@@ -31,15 +36,17 @@ pub fn send_db(paths: &Paths, token: &String) -> Result<(), String> {
         Err(e) => panic!("Couldn't append the database to the archive, reason: {}", e),
     }
 
-    // Add city database to the archive
-    let mut city_db = match File::open(&paths.city_db_path) {
-        Ok(f) => f,
-        Err(e) => panic!("Couldn't open the Kstars city database, reason: {}", e),
-    };
+    if check_city_db_exists(paths) {
+        // Add city database to the archive
+        let mut city_db = match File::open(&paths.city_db_path) {
+            Ok(f) => f,
+            Err(e) => panic!("Couldn't open the Kstars city database, reason: {}", e),
+        };
 
-    match arch.append_file("backup/kstars/mycitydb.sqlite", &mut city_db) {
-        Ok(_) => (),
-        Err(e) => panic!("Couldn't append the database to the archive, reason: {}", e),
+        match arch.append_file("backup/kstars/mycitydb.sqlite", &mut city_db) {
+            Ok(_) => (),
+            Err(e) => panic!("Couldn't append the database to the archive, reason: {}", e),
+        }
     }
 
     // Add fov.dat to the archive
