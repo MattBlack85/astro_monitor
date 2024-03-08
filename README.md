@@ -1,7 +1,12 @@
 # Astro monitor
 A small program that can help you with your astro session. 
 The main functionality is the watchdog; if astromonitor notices Kstars is dead il will send a request to notify you via telegram. 
-The other cool feature is the backup, astromonitor can backup your INDI configuration for your devices and the equipment you use for your ekos profile; you can restore them on other PC or when installing the suite again. 
+The other cool feature is the backup, astromonitor can backup:
+- your INDI configuration for your devices
+- the profile containing your equipment and setup
+- PHD2 profile
+- generic Kstars option (theme, colors, etc.)
+you can restore them on an other PC or when installing the suite again.
 
 
 # Install
@@ -15,11 +20,25 @@ sudo will be needed as last step to move `astromonitor` to `/usr/local/bin`
 
 
 # How to use astromonitor
-Given that your token is (just a random value here to give an example) `SecReTtOkEn` you should pass it to astromonitor this way `astromonitor SecReTtOkEn [COMMAND (like --kstars)]`
+Using astromonitor is easy, just follow these instruction
 
-Open a terminal and run `astromonitor --help` to list the available commands
+## First step - obtain a token using telegram
+On telegram, look for @AstroMonitorBot (the icon is the bubble nebula from hubble) and send a `/register` command, it will answer with a token, store it in a safe place, that's your key for the backups.
 
-## Functionalities:
+## Make a backup
+Open a terminal and run `astromonitor --do-backup XXXXXXXXXXXXXXXXXX` paste your key obtained in the previous step instead of XXXXXXXXXX
+
+## Retrieve a previously made backup
+Open a terminal and run `astromonitor --retrieve-backup XXXXXXXXXXXXXXXXXX` paste your key obtained in the previous step instead of XXXXXXXXXX
+
+## Monitor Kstars during a session
+Open a terminal and run `astromonitor --kstars XXXXXXXXXXXXXXXXXX` paste your key obtained in the previous step instead of XXXXXXXXXX
+
+This will start monitoring Kstars and if it crashes, it will send you a notification via telegram
+
+# List of all functionalities:
+you can obtain the same list by running `astromonitor --help`, here what we actually support:
+
 - `--kstars` monitor Kstars and send a telegram notification if it crashes during a session
 - `--do-backup` make a backup of the Kstars database and INDI devices configuration and store it remotely
 - `--retrieve-backup` restore the previously saved backup
@@ -27,6 +46,3 @@ Open a terminal and run `astromonitor --help` to list the available commands
 - `--system-monitor` monitor system resources (CPU and RAM) usage and log it
 
 The main folder where you'll find the logs is `~/.local/share/astromonitor/logs`
-
-# Obtain an API token
-On telegram, look for @AstroMonitorBot and issue a `/register` command, store the token in a safe place
