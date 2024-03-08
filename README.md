@@ -6,7 +6,9 @@ The other cool feature is the backup, astromonitor can backup:
 - the profile containing your equipment and setup
 - PHD2 profile
 - generic Kstars option (theme, colors, etc.)
-you can restore them on an other PC or when installing the suite again.
+
+  
+you can restore the backup on an other PC or when installing the suite again.
 
 
 # Install
