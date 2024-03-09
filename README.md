@@ -1,4 +1,9 @@
 # Astro monitor
+
+
+https://github.com/MattBlack85/astro_monitor/assets/4163222/587784c4-6a9b-4485-9444-9d0d61d9897e
+
+
 A small program that can help you with your astro session. 
 The main functionality is the watchdog; if astromonitor notices Kstars is dead il will send a request to notify you via telegram. 
 The other cool feature is the backup, astromonitor can backup:
