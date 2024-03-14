@@ -1,7 +1,7 @@
 # Astro monitor
-
-
-https://github.com/MattBlack85/astro_monitor/assets/4163222/587784c4-6a9b-4485-9444-9d0d61d9897e
+<p align="center">
+  <img src="https://github.com/MattBlack85/astro_monitor/assets/4163222/5798898a-2569-49e3-b60c-f783b9134bf6" alt="Your image title" width="200"/>
+</p>
 
 
 A small program that can help you with your astro session. 
@@ -15,6 +15,8 @@ The other cool feature is the backup, astromonitor can backup:
   
 you can restore the backup on an other PC or when installing the suite again.
 
+# Have a look at how it works
+https://github.com/MattBlack85/astro_monitor/assets/4163222/587784c4-6a9b-4485-9444-9d0d61d9897e
 
 # Install
 you trust me? run the following command
