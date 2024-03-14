@@ -55,3 +55,7 @@ you can obtain the same list by running `astromonitor --help`, here what we actu
 - `--system-monitor` monitor system resources (CPU and RAM) usage and log it
 
 The main folder where you'll find the logs is `~/.local/share/astromonitor/logs`
+
+# Compile it and run
+If you want to compile it by yourself, the project is pure `Rust`, you just need the rust toolchain (see https://rustup.rs/), then clone this repo with `git clone https://github.com/MattBlack85/astro_monitor` or `git clone git@github.com:MattBlack85/astro_monitor` cd into the folder `cd astro_monitor` and then `cargo build --release`.
+You will find the compiled program then under `target/release/astromonitor` you can move the program around (for example /usr/local/bin)
