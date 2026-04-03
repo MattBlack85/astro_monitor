@@ -1,5 +1,8 @@
+use std::path::PathBuf;
 use std::time;
 use structopt::StructOpt;
+
+pub mod config;
 
 pub static INTERVAL: time::Duration = time::Duration::from_secs(15);
 pub static HOST: &'static str = "http://astromatto.com:11111";
@@ -30,6 +33,7 @@ pub struct Paths {
     pub kstars_rc_path: String,
     pub phd2_profile_path: String,
     pub phd2_filename: String,
+    pub config_file_path: PathBuf,
 }
 
 impl Paths {
@@ -58,6 +62,10 @@ impl Paths {
         #[cfg(target_os = "macos")]
         let phd2_filename = String::from("PHDGuidingV2_Preferences");
 
+        let mut config_file_path = dirs::config_dir().expect("could not determine config directory");
+        config_file_path.push("astromonitor");
+        config_file_path.push("astro.json");
+
         Self {
             folder_path: String::from(".local/share/astromonitor"),
             logs_path: String::from("logs"),
@@ -73,6 +81,7 @@ impl Paths {
             phd2_profile_path: format!("{}/{}", &home_path, &phd2_filename),
             #[cfg(target_os = "macos")]
             phd2_profile_path: format!("{}/{}", &config_path, &phd2_filename),
+            config_file_path,
         }
     }
 }
