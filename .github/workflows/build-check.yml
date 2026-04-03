@@ -44,9 +44,9 @@ jobs:
       OS: ${{ matrix.OS }}
       SHORT_NAME: ${{ matrix.SHORT_NAME }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Cargo cache
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
@@ -97,7 +97,7 @@ jobs:
           mv ./target/$TARGET/release/$EXEC ./$EXEC
           tar -czf ./artifacts/$NAME-$SHORT_NAME-$TAG.tar.gz $EXEC
       - name: Archive artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: result
           path: |
