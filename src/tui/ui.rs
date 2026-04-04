@@ -1,7 +1,14 @@
 use ratatui::Frame;
 
-use super::app::App;
+use super::app::{App, AppState};
+use super::screens::setup;
 
-pub fn render(_f: &mut Frame, _app: &App) {
-    // Screen rendering is implemented in Phase 3 (setup) and Phase 4 (dashboard).
+pub fn render(f: &mut Frame, app: &App) {
+    match &app.state {
+        AppState::Boot => {}
+        AppState::Setup(_) => setup::render_setup(f, app),
+        AppState::Dashboard => {
+            // Implemented in Phase 4
+        }
+    }
 }
