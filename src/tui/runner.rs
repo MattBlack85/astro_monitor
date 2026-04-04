@@ -8,7 +8,7 @@ use crossterm::{
 };
 use ratatui::{backend::CrosstermBackend, Terminal};
 
-use super::app::App;
+use super::app::{App, AppState};
 use super::ui;
 
 pub fn run() -> Result<(), Box<dyn Error>> {
@@ -23,6 +23,15 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     let result = (|| -> Result<(), Box<dyn Error>> {
         while app.running {
             terminal.draw(|f| ui::render(f, &app))?;
+
+            // If we are in the Working state, run the operation synchronously
+            // (the Working frame has already been drawn above) then loop again
+            // to draw the Result frame without consuming a key event.
+            if matches!(app.state, AppState::Working { .. }) {
+                app.execute_pending_op();
+                continue;
+            }
+
             if let Event::Key(key) = event::read()? {
                 app.handle_key(key);
             }

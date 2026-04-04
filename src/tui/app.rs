@@ -9,10 +9,17 @@ pub enum SetupStep {
     Confirm,
 }
 
+pub enum DashboardOp {
+    TakeBackup,
+    RestoreBackup,
+}
+
 pub enum AppState {
     Boot,
     Setup(SetupStep),
     Dashboard,
+    Working { label: String },
+    Result { message: String, success: bool },
 }
 
 pub struct App {
@@ -22,6 +29,7 @@ pub struct App {
     pub confirm_focus: usize,    // 0 = Confirm button, 1 = Cancel button
     pub dashboard_focus: usize,  // 0 = Take Backup, 1 = Restore Backup
     pub status_message: Option<(String, bool)>, // (message, is_success)
+    pub pending_op: Option<DashboardOp>,
     pub running: bool,
 }
 
@@ -40,6 +48,7 @@ impl App {
             confirm_focus: 0,
             dashboard_focus: 0,
             status_message: None,
+            pending_op: None,
             running: true,
         }
     }
@@ -131,31 +140,49 @@ impl App {
                     }
                 }
                 KeyCode::Enter => {
-                    let token = self
-                        .config
-                        .as_ref()
-                        .map(|c| c.token.clone())
-                        .unwrap_or_default();
-                    let paths = Paths::init();
-                    let result = if self.dashboard_focus == 0 {
-                        send_db(&paths, &token)
+                    let (op, label) = if self.dashboard_focus == 0 {
+                        (DashboardOp::TakeBackup, "Taking backup…")
                     } else {
-                        retrieve_db(&paths, &token)
+                        (DashboardOp::RestoreBackup, "Restoring backup…")
                     };
-                    self.status_message = Some(match result {
-                        Ok(_) => {
-                            let label = if self.dashboard_focus == 0 {
-                                "Backup completed successfully."
-                            } else {
-                                "Backup restored successfully."
-                            };
-                            (label.to_string(), true)
-                        }
-                        Err(e) => (format!("Error: {}", e), false),
-                    });
+                    self.pending_op = Some(op);
+                    self.state = AppState::Working {
+                        label: label.to_string(),
+                    };
                 }
                 _ => {}
             }
+            return;
+        }
+
+        if matches!(self.state, AppState::Result { .. }) {
+            self.state = AppState::Dashboard;
+        }
+    }
+
+    /// Execute the pending backup/restore operation and transition to Result.
+    /// Called by the runner after the Working frame has been drawn.
+    pub fn execute_pending_op(&mut self) {
+        if let Some(op) = self.pending_op.take() {
+            let token = self
+                .config
+                .as_ref()
+                .map(|c| c.token.clone())
+                .unwrap_or_default();
+            let paths = Paths::init();
+            let (result, success_msg) = match &op {
+                DashboardOp::TakeBackup => {
+                    (send_db(&paths, &token), "Backup completed successfully.")
+                }
+                DashboardOp::RestoreBackup => {
+                    (retrieve_db(&paths, &token), "Backup restored successfully.")
+                }
+            };
+            let (message, success) = match result {
+                Ok(_) => (success_msg.to_string(), true),
+                Err(e) => (format!("Error: {}", e), false),
+            };
+            self.state = AppState::Result { message, success };
         }
     }
 }
