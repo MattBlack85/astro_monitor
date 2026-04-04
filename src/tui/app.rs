@@ -1,6 +1,9 @@
 use crate::backup::database::{retrieve_db, send_db};
+use crate::checks::system::kstars_is_running;
+use crate::monitoring::telegram::send_kstars_alert;
 use astromonitor::config::{AppConfig, load_config, save_config};
 use astromonitor::Paths;
+use chrono::SecondsFormat;
 use crossterm::event::{KeyCode, KeyEvent, KeyEventKind};
 
 pub enum SetupStep {
@@ -20,6 +23,7 @@ pub enum AppState {
     Dashboard,
     Working { label: String },
     Result { message: String, success: bool },
+    KStarsMonitor { started_at: String, last_seen_at: String },
 }
 
 pub struct App {
@@ -135,28 +139,80 @@ impl App {
                     }
                 }
                 KeyCode::Down => {
-                    if self.dashboard_focus < 1 {
+                    if self.dashboard_focus < 2 {
                         self.dashboard_focus += 1;
                     }
                 }
-                KeyCode::Enter => {
-                    let (op, label) = if self.dashboard_focus == 0 {
-                        (DashboardOp::TakeBackup, "Taking backup…")
-                    } else {
-                        (DashboardOp::RestoreBackup, "Restoring backup…")
-                    };
-                    self.pending_op = Some(op);
-                    self.state = AppState::Working {
-                        label: label.to_string(),
-                    };
-                }
+                KeyCode::Enter => match self.dashboard_focus {
+                    0 => {
+                        self.pending_op = Some(DashboardOp::TakeBackup);
+                        self.state = AppState::Working {
+                            label: "Taking backup…".to_string(),
+                        };
+                    }
+                    1 => {
+                        self.pending_op = Some(DashboardOp::RestoreBackup);
+                        self.state = AppState::Working {
+                            label: "Restoring backup…".to_string(),
+                        };
+                    }
+                    2 => self.start_kstars_monitor(),
+                    _ => {}
+                },
                 _ => {}
+            }
+            return;
+        }
+
+        if matches!(self.state, AppState::KStarsMonitor { .. }) {
+            if key.code == KeyCode::Char('q') || key.code == KeyCode::Esc {
+                self.state = AppState::Dashboard;
             }
             return;
         }
 
         if matches!(self.state, AppState::Result { .. }) {
             self.state = AppState::Dashboard;
+        }
+    }
+
+    /// Check if KStars is running and enter KStarsMonitor state, or show an error.
+    fn start_kstars_monitor(&mut self) {
+        if kstars_is_running() {
+            let now = chrono::Local::now().to_rfc3339_opts(SecondsFormat::Secs, false);
+            self.state = AppState::KStarsMonitor {
+                started_at: now.clone(),
+                last_seen_at: now,
+            };
+        } else {
+            self.state = AppState::Result {
+                message: "KStars is not running. Please start KStars first.".to_string(),
+                success: false,
+            };
+        }
+    }
+
+    /// Called on each watchdog tick. Checks the KStars process and notifies if it stopped.
+    pub fn tick_kstars_monitor(&mut self) {
+        if kstars_is_running() {
+            let now = chrono::Local::now().to_rfc3339_opts(SecondsFormat::Secs, false);
+            if let AppState::KStarsMonitor { ref mut last_seen_at, .. } = self.state {
+                *last_seen_at = now;
+            }
+        } else {
+            let token = self
+                .config
+                .as_ref()
+                .map(|c| c.token.clone())
+                .unwrap_or_default();
+            let message = match send_kstars_alert(&token) {
+                Ok(_) => "KStars stopped. Telegram notification sent.".to_string(),
+                Err(e) => format!("KStars stopped. Notification failed: {}", e),
+            };
+            self.state = AppState::Result {
+                message,
+                success: true,
+            };
         }
     }
 

@@ -21,3 +21,22 @@ pub fn notify_via_telegram(token: &String) {
         }
     }
 }
+
+/// Send a KStars-stopped alert via Telegram without exiting the process.
+/// Returns Ok(()) on HTTP 200, Err with a description otherwise.
+pub fn send_kstars_alert(token: &str) -> Result<(), String> {
+    match minreq::post(format!("{}/hook/{}", HOST, token)).send() {
+        Ok(r) if r.status_code == 200 => {
+            info!("KStars alert sent successfully.");
+            Ok(())
+        }
+        Ok(r) => {
+            warn!("KStars alert: unexpected status {}", r.status_code);
+            Err(format!("HTTP status {}", r.status_code))
+        }
+        Err(e) => {
+            error!("KStars alert: request failed: {}", e);
+            Err(e.to_string())
+        }
+    }
+}
