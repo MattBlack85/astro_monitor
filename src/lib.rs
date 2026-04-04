@@ -1,26 +1,8 @@
 use std::path::PathBuf;
-use std::time;
-use structopt::StructOpt;
 
 pub mod config;
 
-pub static INTERVAL: time::Duration = time::Duration::from_secs(15);
 pub static HOST: &'static str = "http://astromatto.com:11111";
-
-#[derive(StructOpt)]
-pub struct CliArgs {
-    pub api_token: String,
-    #[structopt(long)]
-    pub fd_monitor: bool,
-    #[structopt(long)]
-    pub system_monitor: bool,
-    #[structopt(long)]
-    pub do_backup: bool,
-    #[structopt(long)]
-    pub retrieve_backup: bool,
-    #[structopt(long)]
-    pub kstars: bool,
-}
 
 pub struct Paths {
     folder_path: String,
