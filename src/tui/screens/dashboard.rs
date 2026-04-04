@@ -8,7 +8,7 @@ use ratatui::{
 
 use crate::tui::app::App;
 
-const BUTTONS: [&str; 2] = ["Take Backup", "Restore Backup"];
+const BUTTONS: [&str; 3] = ["Take Backup", "Restore Backup", "Watch KStars"];
 
 pub fn render_dashboard(f: &mut Frame, app: &App) {
     let area = f.size();
