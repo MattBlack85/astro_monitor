@@ -3,6 +3,7 @@
 mod backup;
 mod checks;
 mod monitoring;
+mod notifications;
 mod tui;
 
 fn main() {

@@ -1,6 +1,7 @@
 use crate::backup::database::{retrieve_db, send_db};
 use crate::checks::system::kstars_is_running;
-use crate::monitoring::telegram::send_kstars_alert;
+use crate::notifications::telegram::TelegramNotifier;
+use crate::notifications::Notification;
 use astromonitor::config::{AppConfig, load_config, save_config};
 use astromonitor::Paths;
 use chrono::SecondsFormat;
@@ -205,7 +206,8 @@ impl App {
                 .as_ref()
                 .map(|c| c.token.clone())
                 .unwrap_or_default();
-            let message = match send_kstars_alert(&token) {
+            let notifier = TelegramNotifier::new(token);
+            let message = match notifier.send("KStars has stopped.") {
                 Ok(_) => "KStars stopped. Telegram notification sent.".to_string(),
                 Err(e) => format!("KStars stopped. Notification failed: {}", e),
             };
