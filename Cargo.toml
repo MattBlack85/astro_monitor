@@ -1,6 +1,6 @@
 [package]
 name = "astromonitor"
-version = "1.1.0"
+version = "2.0.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -8,7 +8,6 @@ edition = "2021"
 [dependencies]
 minreq = { version = "2.6", features = ["https"] }
 sysinfo = "0.27"
-structopt = { version = "0.3", default-features = false }
 dirs = "4.0"
 chrono = "0.4"
 tar = "0.4"

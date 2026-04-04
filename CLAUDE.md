@@ -2,11 +2,11 @@
 
 ## Project Overview
 
-**astromonitor** is a Rust-based CLI watchdog tool for amateur astronomers using [KStars](https://kstars.kde.org/) astronomy software. It monitors the KStars process, sends crash notifications via Telegram, logs system resource usage, and manages backup/restore of astronomy configuration files.
+**astromonitor** is a Rust-based TUI application for amateur astronomers using [KStars](https://kstars.kde.org/) astronomy software. It provides an interactive terminal dashboard to back up and restore astronomy configuration files, with Telegram integration for notifications.
 
 - **Language:** Rust (Edition 2021)
 - **Binary name:** `astromonitor`
-- **Version:** 1.1.0
+- **Version:** 2.0.0
 - **Supported platforms:** Linux (AMD64, ARM64/Raspberry Pi), macOS (Intel, Apple Silicon)
 
 ---
@@ -17,18 +17,30 @@
 astro_monitor/
 ├── .github/workflows/build-check.yml   # CI/CD: multi-target build and release
 ├── src/
-│   ├── main.rs                         # CLI entry point, orchestration, Telegram notify
-│   ├── lib.rs                          # Core types: CliArgs, Paths, constants
+│   ├── main.rs                         # Entry point: calls tui::runner::run()
+│   ├── lib.rs                          # Core types: Paths, HOST constant
+│   ├── config.rs                       # AppConfig load/save (astro.json)
 │   ├── backup/
 │   │   ├── mod.rs                      # Module re-exports
 │   │   └── database.rs                 # Backup upload and restore logic
 │   ├── checks/
 │   │   ├── mod.rs                      # Module re-exports
-│   │   ├── system.rs                   # lsof detection
+│   │   ├── system.rs                   # lsof detection (reserved for future TUI use)
 │   │   └── vault.rs                    # Log directory initialization
-│   └── monitoring/
-│       ├── mod.rs                      # Module re-exports
-│       └── resources.rs                # CPU/RAM logging
+│   ├── monitoring/
+│   │   ├── mod.rs                      # Module re-exports
+│   │   ├── resources.rs                # CPU/RAM logging (reserved for future TUI use)
+│   │   └── telegram.rs                 # Telegram notification helper
+│   └── tui/
+│       ├── mod.rs                      # TUI module root
+│       ├── app.rs                      # App struct, AppState enum, input handling
+│       ├── runner.rs                   # Terminal init, main event loop
+│       ├── ui.rs                       # Top-level render dispatcher
+│       └── screens/
+│           ├── mod.rs                  # Screen module re-exports
+│           ├── setup.rs                # First-run setup wizard screens
+│           ├── dashboard.rs            # Main action dashboard
+│           └── feedback.rs            # Working / Result screens
 ├── Cargo.toml                          # Rust project manifest and dependencies
 ├── Cargo.lock                          # Locked dependency versions
 ├── install.sh                          # End-user install script
@@ -39,19 +51,49 @@ astro_monitor/
 
 ## Key Architecture
 
-### CLI Structure (`src/lib.rs`, `src/main.rs`)
+### TUI Structure (`src/tui/`)
 
-The `CliArgs` struct (via `structopt`) defines all CLI flags:
-- `--kstars <TOKEN>` — monitor KStars process; send Telegram alert on crash
-- `--do-backup <TOKEN>` — create TAR archive of astronomy configs and upload to server
-- `--retrieve-backup <TOKEN>` — download and restore backed-up configs
-- `--fd-monitor` — log open file descriptors (requires `lsof` on PATH)
-- `--system-monitor` — periodically log CPU/RAM usage to timestamped files
+The application is fully driven by a `ratatui`/`crossterm` Terminal UI. There are no CLI flags.
 
-All features requiring a token use a Telegram bot (`@AstroMonitorBot`) for authentication and notifications.
+**Application states (`src/tui/app.rs`)**:
+
+```
+AppState::Boot
+    │
+    ├─ config exists ──► AppState::Dashboard
+    │
+    └─ config missing ──► AppState::Setup(SetupStep::Instructions)
+                               │
+                               └─► AppState::Setup(SetupStep::TokenEntry)
+                                        │
+                                        └─► AppState::Setup(SetupStep::Confirm)
+                                                 │
+                                                 ├─ confirmed ──► (save) ──► AppState::Dashboard
+                                                 └─ cancelled ──► AppState::Setup(SetupStep::TokenEntry)
+
+AppState::Dashboard ──► AppState::Working { label } ──► AppState::Result { message, success }
+                                                               │
+                                                               └─► AppState::Dashboard (any key)
+```
+
+- `App::new()` loads the config to determine initial state.
+- `App::handle_key()` dispatches key events to the active state handler.
+- `App::execute_pending_op()` runs the backup/restore synchronously after the Working frame is drawn.
+
+### Config File (`src/config.rs`)
+
+**Path:** `~/.config/astromonitor/astro.json`
+
+```json
+{
+  "token": "<telegram bot token>"
+}
+```
+
+- `load_config() -> Option<AppConfig>` — reads and deserializes; returns `None` on missing/malformed file
+- `save_config(config: &AppConfig) -> Result<(), String>` — creates directory if needed, writes JSON
 
 ### Key Constants (`src/lib.rs`)
-- `INTERVAL = 15` — polling interval in seconds for process/resource monitoring
 - `HOST = "http://astromatto.com:11111"` — hardcoded backup/notification server
 
 ### Cross-platform Paths (`src/lib.rs` — `Paths` struct)
@@ -85,8 +127,7 @@ cargo build
 cargo build --release
 
 # Run directly
-cargo run -- --help
-cargo run -- --kstars <TOKEN>
+cargo run
 ```
 
 ### Cross-compilation (matches CI targets)
@@ -110,7 +151,7 @@ cargo build --release --target aarch64-unknown-linux-gnu
 
 The `env_logger` crate reads the `ASTROMONITOR_LOG_LEVEL` environment variable:
 ```bash
-ASTROMONITOR_LOG_LEVEL=debug cargo run -- --system-monitor
+ASTROMONITOR_LOG_LEVEL=debug cargo run
 ```
 Default level is `info`. Use `error`, `warn`, `info`, `debug`, or `trace`.
 
@@ -175,8 +216,11 @@ When adding tests:
 
 | Crate | Version | Purpose |
 |-------|---------|---------|
-| `structopt` | 0.3 | CLI argument parsing |
-| `sysinfo` | 0.27 | CPU, RAM, process info |
+| `ratatui` | 0.26 | Terminal UI framework |
+| `crossterm` | 0.27 | Cross-platform terminal backend and input events |
+| `serde` | 1 | Serialization/deserialization (derive macros) |
+| `serde_json` | 1 | JSON config file format |
+| `sysinfo` | 0.27 | CPU, RAM, process info (reserved for future TUI panels) |
 | `minreq` | 2.6 | HTTP client (with TLS for Telegram/backup API) |
 | `tar` | 0.4 | TAR archive creation and extraction |
 | `chrono` | 0.4 | Timestamp formatting for log files |
@@ -209,8 +253,8 @@ When adding tests:
 1. **No test suite exists** — changes cannot be validated by running tests. Reason carefully about correctness.
 2. **The backup server URL is hardcoded** — `http://astromatto.com:11111`. Any change here affects all users.
 3. **Cross-platform paths are critical** — always use the `Paths` struct rather than hardcoded paths to ensure Linux/macOS compatibility.
-4. **The polling loop in `main.rs`** uses `std::thread::sleep(Duration::from_secs(INTERVAL))`. Changes to monitoring logic should preserve this pattern.
+4. **No CLI flags** — version 2.0 is entirely TUI-driven. Do not re-introduce `structopt` or `clap` unless asked.
 5. **No async runtime** — the project is fully synchronous. Do not introduce `tokio` or `async-std` without strong justification.
 6. **`Cargo.lock` is committed** — this is a binary application, so the lock file should stay tracked in git.
 7. **CI targets ARM** — avoid `x86_64`-only APIs or system calls; test cross-compilation when adding system-level features.
-8. **`structopt` is legacy** — it wraps `clap` v2. New CLI projects should use `clap` v4 directly, but do not migrate this unless asked.
+8. **`checks/` and `monitoring/` modules are preserved** — they are kept for potential future TUI panels (e.g. system resource monitor, fd monitor) but are not wired into the TUI yet.
