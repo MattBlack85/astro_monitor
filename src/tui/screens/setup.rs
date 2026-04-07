@@ -1,9 +1,9 @@
 use ratatui::{
+    Frame,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Clear, Paragraph},
-    Frame,
 };
 
 use crate::tui::app::{App, AppState, SetupStep};
@@ -43,7 +43,7 @@ fn centered_rect(area: Rect, width_pct: u16, height: u16) -> Rect {
 }
 
 fn render_instructions(f: &mut Frame) {
-    let area = f.size();
+    let area = f.area();
     let panel = centered_rect(area, 70, 16);
 
     let text = vec![
@@ -81,7 +81,7 @@ fn render_instructions(f: &mut Frame) {
 }
 
 fn render_token_entry(f: &mut Frame, app: &App) {
-    let area = f.size();
+    let area = f.area();
     let panel = centered_rect(area, 60, 7);
 
     let input_line = format!(" {} ", app.token_input);
@@ -123,7 +123,7 @@ fn render_token_entry(f: &mut Frame, app: &App) {
 }
 
 fn render_confirm(f: &mut Frame, app: &App) {
-    let area = f.size();
+    let area = f.area();
     let panel = centered_rect(area, 60, 9);
 
     let masked = mask_token(&app.token_input);
@@ -181,10 +181,7 @@ fn render_confirm(f: &mut Frame, app: &App) {
             height: 1,
         };
         let hint = Paragraph::new(Line::from(vec![
-            Span::styled(
-                "  [←→/Tab] Switch  ",
-                Style::default().fg(Color::DarkGray),
-            ),
+            Span::styled("  [←→/Tab] Switch  ", Style::default().fg(Color::DarkGray)),
             Span::styled("[Enter] Activate  ", Style::default().fg(Color::DarkGray)),
             Span::styled("[Esc] Back", Style::default().fg(Color::DarkGray)),
         ]));

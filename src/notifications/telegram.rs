@@ -8,7 +8,9 @@ pub struct TelegramNotifier {
 
 impl TelegramNotifier {
     pub fn new(token: impl Into<String>) -> Self {
-        Self { token: token.into() }
+        Self {
+            token: token.into(),
+        }
     }
 }
 

@@ -1,9 +1,9 @@
 use crate::backup::database::{retrieve_db, send_db};
 use crate::checks::system::kstars_is_running;
-use crate::notifications::telegram::TelegramNotifier;
 use crate::notifications::Notification;
-use astromonitor::config::{AppConfig, load_config, save_config};
+use crate::notifications::telegram::TelegramNotifier;
 use astromonitor::Paths;
+use astromonitor::config::{AppConfig, load_config, save_config};
 use chrono::SecondsFormat;
 use crossterm::event::{KeyCode, KeyEvent, KeyEventKind};
 
@@ -22,17 +22,25 @@ pub enum AppState {
     Boot,
     Setup(SetupStep),
     Dashboard,
-    Working { label: String },
-    Result { message: String, success: bool },
-    KStarsMonitor { started_at: String, last_seen_at: String },
+    Working {
+        label: String,
+    },
+    Result {
+        message: String,
+        success: bool,
+    },
+    KStarsMonitor {
+        started_at: String,
+        last_seen_at: String,
+    },
 }
 
 pub struct App {
     pub state: AppState,
     pub token_input: String,
     pub config: Option<AppConfig>,
-    pub confirm_focus: usize,    // 0 = Confirm button, 1 = Cancel button
-    pub dashboard_focus: usize,  // 0 = Take Backup, 1 = Restore Backup
+    pub confirm_focus: usize,   // 0 = Confirm button, 1 = Cancel button
+    pub dashboard_focus: usize, // 0 = Take Backup, 1 = Restore Backup
     pub status_message: Option<(String, bool)>, // (message, is_success)
     pub pending_op: Option<DashboardOp>,
     pub running: bool,
@@ -66,7 +74,9 @@ impl App {
 
         // Global: Ctrl+C always quits
         if key.code == KeyCode::Char('c')
-            && key.modifiers.contains(crossterm::event::KeyModifiers::CONTROL)
+            && key
+                .modifiers
+                .contains(crossterm::event::KeyModifiers::CONTROL)
         {
             self.running = false;
             return;
@@ -197,7 +207,11 @@ impl App {
     pub fn tick_kstars_monitor(&mut self) {
         if kstars_is_running() {
             let now = chrono::Local::now().to_rfc3339_opts(SecondsFormat::Secs, false);
-            if let AppState::KStarsMonitor { ref mut last_seen_at, .. } = self.state {
+            if let AppState::KStarsMonitor {
+                ref mut last_seen_at,
+                ..
+            } = self.state
+            {
                 *last_seen_at = now;
             }
         } else {

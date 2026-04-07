@@ -44,7 +44,8 @@ impl Paths {
         #[cfg(target_os = "macos")]
         let phd2_filename = String::from("PHDGuidingV2_Preferences");
 
-        let mut config_file_path = dirs::config_dir().expect("could not determine config directory");
+        let mut config_file_path =
+            dirs::config_dir().expect("could not determine config directory");
         config_file_path.push("astromonitor");
         config_file_path.push("astro.json");
 

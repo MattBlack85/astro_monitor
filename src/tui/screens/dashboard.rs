@@ -1,9 +1,9 @@
 use ratatui::{
+    Frame,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Clear, Paragraph},
-    Frame,
 };
 
 use crate::tui::app::App;
@@ -11,7 +11,7 @@ use crate::tui::app::App;
 const BUTTONS: [&str; 3] = ["Take Backup", "Restore Backup", "Watch KStars"];
 
 pub fn render_dashboard(f: &mut Frame, app: &App) {
-    let area = f.size();
+    let area = f.area();
 
     // Outer block with title
     let outer_block = Block::default()
@@ -45,7 +45,9 @@ pub fn render_dashboard(f: &mut Frame, app: &App) {
     let status_text = match &app.status_message {
         Some((msg, true)) => Line::from(Span::styled(
             format!(" {}", msg),
-            Style::default().fg(Color::Green).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(Color::Green)
+                .add_modifier(Modifier::BOLD),
         )),
         Some((msg, false)) => Line::from(Span::styled(
             format!(" {}", msg),

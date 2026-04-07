@@ -1,13 +1,13 @@
 use ratatui::{
+    Frame,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Paragraph},
-    Frame,
 };
 
 pub fn render_working(f: &mut Frame, label: &str) {
-    let area = f.size();
+    let area = f.area();
 
     let outer_block = Block::default()
         .title(" AstroMonitor 2.0 ")
@@ -49,7 +49,7 @@ pub fn render_working(f: &mut Frame, label: &str) {
 }
 
 pub fn render_kstars_monitor(f: &mut Frame, started_at: &str, last_seen_at: &str) {
-    let area = f.size();
+    let area = f.area();
 
     let outer_block = Block::default()
         .title(" AstroMonitor 2.0 — KStars Watchdog ")
@@ -109,7 +109,7 @@ pub fn render_kstars_monitor(f: &mut Frame, started_at: &str, last_seen_at: &str
 }
 
 pub fn render_result(f: &mut Frame, message: &str, success: bool) {
-    let area = f.size();
+    let area = f.area();
 
     let outer_block = Block::default()
         .title(" AstroMonitor 2.0 ")

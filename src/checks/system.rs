@@ -1,5 +1,5 @@
 use std::process::Command;
-use sysinfo::{System, SystemExt};
+use sysinfo::System;
 
 pub fn lsof_on_system() -> bool {
     let result = Command::new("which").arg("lsof").output().expect("error");
@@ -15,7 +15,10 @@ pub fn lsof_on_system() -> bool {
 /// Returns true if a process named "kstars" is currently running.
 pub fn kstars_is_running() -> bool {
     let mut system = System::new();
-    system.refresh_processes();
-    let found = system.processes_by_exact_name("kstars").next().is_some();
+    system.refresh_all();
+    let found = system
+        .processes_by_exact_name("kstars".as_ref())
+        .next()
+        .is_some();
     found
 }
