@@ -31,8 +31,46 @@ AstroMonitor 2.0 features a fully interactive Terminal UI — no flags needed.
 1. Run `astromonitor` in a terminal.
 2. The setup wizard appears automatically.
 3. Follow the on-screen instructions: open Telegram, search for `@AstroMonitorBot`, send `/register`, and copy the token you receive.
-4. Enter the token when prompted, then confirm.
-5. Your token is saved to `~/.config/astromonitor/astro.json` — you won't need to enter it again.
+4. Enter the token when prompted.
+5. Choose where alerts should be delivered — Telegram, LAN, or both (see below).
+6. Confirm. Your settings are saved to `~/.config/astromonitor/astro.json` — you won't need to enter them again.
+
+## Notifications without internet
+
+The Telegram bot relays through a server on the internet. At a dark site
+there usually isn't any, so an alert about a session that has gone wrong
+is lost exactly when it matters most.
+
+Choosing **LAN** (or **Both**) makes AstroMonitor send the alert as a UDP
+datagram on the local network instead. No relay, no broker, no internet —
+just a listener on the same machine or the same network that surfaces the
+message. **Both** is the safe default for a machine that is sometimes
+online: the alert counts as delivered if either route gets through.
+
+The datagram payload is the message itself, as plain text, so the
+simplest possible listener works:
+
+```shell
+nc -ul 5005
+```
+
+The destination is configurable during setup:
+
+| Destination | When to use it |
+|---|---|
+| `255.255.255.255:5005` (default) | a listener on another device on the same network |
+| `127.0.0.1:5005` | a listener on this same machine |
+
+If you run [astroarch-bridge](https://github.com/Johannes1979I/astroarch-bridge)
+it can act as that listener: it republishes what it receives to every
+connected client, so the alert reaches your phone, tablet or laptop
+browser with nothing else to install. Use `127.0.0.1:5005` when the
+bridge runs on this machine, which is the usual case; to receive from
+another host, point AstroMonitor at the broadcast address and set
+`ASTROARCH_NOTIFY_UDP_HOST=0.0.0.0` on the bridge.
+
+Existing configuration files keep working: without an explicit choice,
+notifications stay on Telegram exactly as before.
 
 ## Dashboard
 

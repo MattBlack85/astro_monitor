@@ -6,6 +6,8 @@ use ratatui::{
     widgets::{Block, Borders, Clear, Paragraph},
 };
 
+use astromonitor::config::NotificationMode;
+
 use crate::tui::app::{App, AppState, SetupStep};
 
 pub fn render_setup(f: &mut Frame, app: &App) {
@@ -13,6 +15,8 @@ pub fn render_setup(f: &mut Frame, app: &App) {
         AppState::Setup(step) => match step {
             SetupStep::Instructions => render_instructions(f),
             SetupStep::TokenEntry => render_token_entry(f, app),
+            SetupStep::NotificationMode => render_notification_mode(f, app),
+            SetupStep::LanAddress => render_lan_address(f, app),
             SetupStep::Confirm => render_confirm(f, app),
         },
         _ => {}
@@ -122,9 +126,149 @@ fn render_token_entry(f: &mut Frame, app: &App) {
     }
 }
 
+/// Draws a one-line hint bar just under a panel.
+fn render_hint(f: &mut Frame, panel: Rect, spans: Vec<Span>) {
+    let area = f.area();
+    let hint_y = panel.y + panel.height;
+    if hint_y < area.height {
+        let hint_area = Rect {
+            x: panel.x,
+            y: hint_y,
+            width: panel.width,
+            height: 1,
+        };
+        f.render_widget(Paragraph::new(Line::from(spans)), hint_area);
+    }
+}
+
+fn render_notification_mode(f: &mut Frame, app: &App) {
+    let area = f.area();
+    let panel = centered_rect(area, 70, 16);
+
+    let options = [
+        (
+            NotificationMode::Telegram,
+            "Telegram",
+            "relayed over the internet",
+        ),
+        (
+            NotificationMode::Lan,
+            "LAN",
+            "UDP datagram, works with no internet",
+        ),
+        (
+            NotificationMode::Both,
+            "Both",
+            "delivered if either one gets through",
+        ),
+    ];
+
+    let mut text = vec![
+        Line::from(""),
+        Line::from(Span::styled(
+            "  Where should alerts be delivered?",
+            Style::default().add_modifier(Modifier::BOLD),
+        )),
+        Line::from(""),
+    ];
+
+    for (idx, (_, label, description)) in options.iter().enumerate() {
+        let focused = idx == app.notify_mode_focus;
+        let style = if focused {
+            Style::default()
+                .fg(Color::Black)
+                .bg(Color::Cyan)
+                .add_modifier(Modifier::BOLD)
+        } else {
+            Style::default().fg(Color::White)
+        };
+        text.push(Line::from(vec![
+            Span::raw("    "),
+            Span::styled(format!(" {:<9}", label), style),
+            Span::styled(
+                format!("  {}", description),
+                Style::default().fg(Color::DarkGray),
+            ),
+        ]));
+    }
+
+    text.push(Line::from(""));
+    text.push(Line::from(Span::styled(
+        "  At a dark site the Telegram relay is unreachable:",
+        Style::default().fg(Color::DarkGray),
+    )));
+    text.push(Line::from(Span::styled(
+        "  LAN delivery is the one that still works there.",
+        Style::default().fg(Color::DarkGray),
+    )));
+
+    let block = Block::default()
+        .title(" Notification Mode ")
+        .borders(Borders::ALL)
+        .style(Style::default().fg(Color::Cyan));
+
+    f.render_widget(Clear, panel);
+    f.render_widget(Paragraph::new(text).block(block), panel);
+
+    render_hint(
+        f,
+        panel,
+        vec![
+            Span::styled("  [↑↓] Navigate  ", Style::default().fg(Color::DarkGray)),
+            Span::styled("[Enter] Select  ", Style::default().fg(Color::DarkGray)),
+            Span::styled("[Esc] Back", Style::default().fg(Color::DarkGray)),
+        ],
+    );
+}
+
+fn render_lan_address(f: &mut Frame, app: &App) {
+    let area = f.area();
+    let panel = centered_rect(area, 60, 11);
+
+    let input_line = format!(" {} ", app.lan_addr_input);
+
+    let text = vec![
+        Line::from(""),
+        Line::from("  Where to send the datagram:"),
+        Line::from(""),
+        Line::from(Span::styled(
+            input_line,
+            Style::default().fg(Color::White).bg(Color::DarkGray),
+        )),
+        Line::from(""),
+        Line::from(Span::styled(
+            "  255.255.255.255:5005 broadcasts to the whole LAN.",
+            Style::default().fg(Color::DarkGray),
+        )),
+        Line::from(Span::styled(
+            "  Use 127.0.0.1:5005 for a listener on this machine.",
+            Style::default().fg(Color::DarkGray),
+        )),
+        Line::from(""),
+    ];
+
+    let block = Block::default()
+        .title(" LAN Destination ")
+        .borders(Borders::ALL)
+        .style(Style::default().fg(Color::Cyan));
+
+    f.render_widget(Clear, panel);
+    f.render_widget(Paragraph::new(text).block(block), panel);
+
+    render_hint(
+        f,
+        panel,
+        vec![
+            Span::styled("  [Enter] Confirm  ", Style::default().fg(Color::DarkGray)),
+            Span::styled("[Esc] Back", Style::default().fg(Color::DarkGray)),
+        ],
+    );
+}
+
 fn render_confirm(f: &mut Frame, app: &App) {
     let area = f.area();
-    let panel = centered_rect(area, 60, 9);
+    let extra = if app.selected_mode().uses_lan() { 1 } else { 0 };
+    let panel = centered_rect(area, 60, 11 + extra);
 
     let masked = mask_token(&app.token_input);
 
@@ -145,7 +289,9 @@ fn render_confirm(f: &mut Frame, app: &App) {
         Style::default().fg(Color::Red)
     };
 
-    let text = vec![
+    let mode = app.selected_mode();
+
+    let mut text = vec![
         Line::from(""),
         Line::from("  Token to save:"),
         Line::from(""),
@@ -155,13 +301,29 @@ fn render_confirm(f: &mut Frame, app: &App) {
         )),
         Line::from(""),
         Line::from(vec![
-            Span::raw("    "),
-            Span::styled("[ Confirm ]", confirm_style),
-            Span::raw("   "),
-            Span::styled("[ Cancel ]", cancel_style),
+            Span::raw("  Notifications: "),
+            Span::styled(mode.label(), Style::default().fg(Color::Yellow)),
         ]),
-        Line::from(""),
     ];
+
+    if mode.uses_lan() {
+        text.push(Line::from(vec![
+            Span::raw("  Datagram to:   "),
+            Span::styled(
+                app.lan_addr_input.clone(),
+                Style::default().fg(Color::Yellow),
+            ),
+        ]));
+    }
+
+    text.push(Line::from(""));
+    text.push(Line::from(vec![
+        Span::raw("    "),
+        Span::styled("[ Confirm ]", confirm_style),
+        Span::raw("   "),
+        Span::styled("[ Cancel ]", cancel_style),
+    ]));
+    text.push(Line::from(""));
 
     let block = Block::default()
         .title(" Confirm Token ")
