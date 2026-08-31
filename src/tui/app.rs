@@ -1,15 +1,21 @@
 use crate::backup::database::{retrieve_db, send_db};
 use crate::checks::system::kstars_is_running;
-use crate::notifications::Notification;
+use crate::notifications::lan::LanNotifier;
 use crate::notifications::telegram::TelegramNotifier;
+use crate::notifications::{MultiNotifier, Notification};
 use astromonitor::Paths;
-use astromonitor::config::{AppConfig, load_config, save_config};
+use astromonitor::config::{AppConfig, NotificationMode, load_config, save_config};
 use chrono::SecondsFormat;
 use crossterm::event::{KeyCode, KeyEvent, KeyEventKind};
 
 pub enum SetupStep {
     Instructions,
     TokenEntry,
+    /// Where alerts should go. Offered after the token so that a user who
+    /// observes without connectivity can pick LAN delivery.
+    NotificationMode,
+    /// Only reached when the chosen mode involves the LAN.
+    LanAddress,
     Confirm,
 }
 
@@ -39,6 +45,8 @@ pub struct App {
     pub state: AppState,
     pub token_input: String,
     pub config: Option<AppConfig>,
+    pub notify_mode_focus: usize, // 0 = Telegram, 1 = LAN, 2 = Both
+    pub lan_addr_input: String,
     pub confirm_focus: usize,   // 0 = Confirm button, 1 = Cancel button
     pub dashboard_focus: usize, // 0 = Take Backup, 1 = Restore Backup
     pub status_message: Option<(String, bool)>, // (message, is_success)
@@ -57,6 +65,8 @@ impl App {
         Self {
             state,
             token_input: String::new(),
+            notify_mode_focus: 0,
+            lan_addr_input: astromonitor::config::DEFAULT_LAN_ADDR.to_string(),
             config,
             confirm_focus: 0,
             dashboard_focus: 0,
@@ -93,8 +103,7 @@ impl App {
             match key.code {
                 KeyCode::Enter => {
                     if !self.token_input.is_empty() {
-                        self.confirm_focus = 0;
-                        self.state = AppState::Setup(SetupStep::Confirm);
+                        self.state = AppState::Setup(SetupStep::NotificationMode);
                     }
                 }
                 KeyCode::Esc => {
@@ -111,6 +120,56 @@ impl App {
             return;
         }
 
+        if matches!(self.state, AppState::Setup(SetupStep::NotificationMode)) {
+            match key.code {
+                KeyCode::Up => {
+                    if self.notify_mode_focus > 0 {
+                        self.notify_mode_focus -= 1;
+                    }
+                }
+                KeyCode::Down => {
+                    if self.notify_mode_focus < 2 {
+                        self.notify_mode_focus += 1;
+                    }
+                }
+                KeyCode::Enter => {
+                    self.confirm_focus = 0;
+                    self.state = if self.selected_mode().uses_lan() {
+                        AppState::Setup(SetupStep::LanAddress)
+                    } else {
+                        AppState::Setup(SetupStep::Confirm)
+                    };
+                }
+                KeyCode::Esc => {
+                    self.state = AppState::Setup(SetupStep::TokenEntry);
+                }
+                _ => {}
+            }
+            return;
+        }
+
+        if matches!(self.state, AppState::Setup(SetupStep::LanAddress)) {
+            match key.code {
+                KeyCode::Enter => {
+                    if !self.lan_addr_input.trim().is_empty() {
+                        self.confirm_focus = 0;
+                        self.state = AppState::Setup(SetupStep::Confirm);
+                    }
+                }
+                KeyCode::Esc => {
+                    self.state = AppState::Setup(SetupStep::NotificationMode);
+                }
+                KeyCode::Backspace => {
+                    self.lan_addr_input.pop();
+                }
+                KeyCode::Char(c) => {
+                    self.lan_addr_input.push(c);
+                }
+                _ => {}
+            }
+            return;
+        }
+
         if matches!(self.state, AppState::Setup(SetupStep::Confirm)) {
             match key.code {
                 KeyCode::Left | KeyCode::Right | KeyCode::Tab => {
@@ -120,6 +179,8 @@ impl App {
                     if self.confirm_focus == 0 {
                         let config = AppConfig {
                             token: self.token_input.clone(),
+                            notification_mode: self.selected_mode(),
+                            lan_broadcast_addr: self.lan_addr_input.trim().to_string(),
                         };
                         if save_config(&config).is_ok() {
                             self.config = Some(config);
@@ -127,12 +188,12 @@ impl App {
                         }
                     } else {
                         self.confirm_focus = 0;
-                        self.state = AppState::Setup(SetupStep::TokenEntry);
+                        self.state = AppState::Setup(SetupStep::NotificationMode);
                     }
                 }
                 KeyCode::Esc => {
                     self.confirm_focus = 0;
-                    self.state = AppState::Setup(SetupStep::TokenEntry);
+                    self.state = AppState::Setup(SetupStep::NotificationMode);
                 }
                 _ => {}
             }
@@ -187,6 +248,42 @@ impl App {
         }
     }
 
+    /// The mode currently highlighted in the setup wizard.
+    pub fn selected_mode(&self) -> NotificationMode {
+        match self.notify_mode_focus {
+            1 => NotificationMode::Lan,
+            2 => NotificationMode::Both,
+            _ => NotificationMode::Telegram,
+        }
+    }
+
+    /// Assemble the notifier the saved configuration asks for.
+    ///
+    /// A config written before LAN delivery existed deserialises with
+    /// `NotificationMode::Telegram`, so behaviour is unchanged for anyone who
+    /// does not opt in.
+    fn build_notifier(&self) -> Box<dyn Notification> {
+        let Some(config) = self.config.as_ref() else {
+            return Box::new(TelegramNotifier::new(String::new()));
+        };
+        let mut backends: Vec<Box<dyn Notification>> = Vec::new();
+        if config.notification_mode.uses_lan() {
+            // Tried first: at a dark site it is the one that can succeed,
+            // and it fails fast instead of waiting on an HTTP timeout.
+            backends.push(Box::new(LanNotifier::new(
+                config.lan_broadcast_addr.clone(),
+            )));
+        }
+        if config.notification_mode.uses_telegram() {
+            backends.push(Box::new(TelegramNotifier::new(config.token.clone())));
+        }
+        if backends.len() == 1 {
+            backends.pop().expect("len checked")
+        } else {
+            Box::new(MultiNotifier::new(backends))
+        }
+    }
+
     /// Check if KStars is running and enter KStarsMonitor state, or show an error.
     fn start_kstars_monitor(&mut self) {
         if kstars_is_running() {
@@ -215,14 +312,14 @@ impl App {
                 *last_seen_at = now;
             }
         } else {
-            let token = self
+            let label = self
                 .config
                 .as_ref()
-                .map(|c| c.token.clone())
-                .unwrap_or_default();
-            let notifier = TelegramNotifier::new(token);
+                .map(|c| c.notification_mode.label())
+                .unwrap_or("Telegram");
+            let notifier = self.build_notifier();
             let message = match notifier.send("KStars has stopped.") {
-                Ok(_) => "KStars stopped. Telegram notification sent.".to_string(),
+                Ok(_) => format!("KStars stopped. {} notification sent.", label),
                 Err(e) => format!("KStars stopped. Notification failed: {}", e),
             };
             self.state = AppState::Result {
